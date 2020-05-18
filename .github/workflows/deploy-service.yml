@@ -4,13 +4,6 @@ on:
   push:
     branches:
       - master
-    paths:
-      - service/**
-      - .github/workflows/**
-
-  pull_request:
-    paths:
-      - service/**
 
 jobs:
   build:
@@ -31,14 +24,12 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Make build of the Service project
-        working-directory: ./service
         run: |
           make build
 
       - name: Deploy with Serverless
         uses: serverless/github-action@master
         with:
-          path: ./service
           args: deploy
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
