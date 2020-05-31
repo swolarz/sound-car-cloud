@@ -2,6 +2,8 @@ import * as cdk from '@aws-cdk/core';
 import * as lambda from '@aws-cdk/aws-lambda';
 import * as apigateway from '@aws-cdk/aws-apigateway';
 import * as cognito from "@aws-cdk/aws-cognito";
+import * as s3 from "@aws-cdk/aws-s3";
+import * as cloudfront from "@aws-cdk/aws-cloudfront";
 
 export class SoundCarCloudStack extends cdk.Stack {
     constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
@@ -40,6 +42,76 @@ export class SoundCarCloudStack extends cdk.Stack {
     const post = api.root.addMethod('GET', helloLambdaIntegration, {
       authorizationType: apigateway.AuthorizationType.COGNITO,
       authorizer: { authorizerId: auth.ref }
+    });
+
+    const uiBucket = new s3.Bucket(this, 'SoundCarCloudUIBucket');
+    const distribution = new cloudfront.CloudFrontWebDistribution(this, 'SoundCarCloudUIDistribution', {
+      originConfigs: [
+        {
+          s3OriginSource: {
+            s3BucketSource: uiBucket,
+          },
+          behaviors: [{isDefaultBehavior: true}]
+        }
+      ]
+    });
+    
+    const appUrl = "https://" + distribution.domainName;
+
+    const cfnUserPoolDomain = new cognito.CfnUserPoolDomain(this, "CognitoDomain", {
+      domain: "auth-" + this.account + "-" + this.region,
+      userPoolId: userPool.userPoolId
+    });
+
+    const cfnUserPoolClient = new cognito.CfnUserPoolClient(this, "CognitoAppClient", {
+      supportedIdentityProviders: ["COGNITO"],
+      clientName: "Web",
+      allowedOAuthFlowsUserPoolClient: true,
+      allowedOAuthFlows: ["code"],
+      allowedOAuthScopes: ["phone", "email", "openid", "profile"],
+      explicitAuthFlows: ["ALLOW_REFRESH_TOKEN_AUTH"],
+      preventUserExistenceErrors: "ENABLED",
+      generateSecret: false,
+      refreshTokenValidity: 1,
+      callbackUrLs: [appUrl],
+      logoutUrLs: [appUrl],
+      userPoolId: userPool.userPoolId
+    });
+
+    // outputs for aws-exports file
+    new cdk.CfnOutput(this, "RegionOutput", {
+      description: "Region",
+      value: this.region
+    });
+
+    new cdk.CfnOutput(this, "CognitoDomainOutput", {
+      description: "Cognito Domain",
+      value: cfnUserPoolDomain.domain
+    });
+
+    new cdk.CfnOutput(this, "UserPoolIdOutput", {
+      description: "UserPool ID",
+      value: userPool.userPoolId
+    });
+
+    new cdk.CfnOutput(this, "AppClientIdOutput", {
+      description: "App Client ID",
+      value: cfnUserPoolClient.ref
+    });
+
+    new cdk.CfnOutput(this, "APIUrlOutput", {
+      description: "API URL",
+      value: api.url
+    });
+
+    new cdk.CfnOutput(this, "AppUrl", {
+      description: "The frontend app's URL",
+      value: appUrl
+    });
+
+    new cdk.CfnOutput(this, "UIBucketName", {
+      description: "The frontend app's bucket name",
+      value: uiBucket.bucketName
     });
   }
 }
