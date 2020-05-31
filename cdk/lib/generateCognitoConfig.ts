@@ -30,7 +30,7 @@ class GenerateCognitoConfig {
         };
     
         const autoGenConfigFile = "// this file is auto generated, do not edit it directly\n" +
-          "module.exports = " + JSON.stringify(params, null, 2);
+          "export default  " + JSON.stringify(params, null, 2);
 
           fs.writeFileSync(filePath, autoGenConfigFile);
         }
