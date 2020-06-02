@@ -10,6 +10,7 @@ on:
 
 env:
   NODE_VERSION: '12.13.0'
+  AWS_REGION: us-east-2
 
 jobs:
   build:
@@ -27,7 +28,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-2
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Checkout project repository
         uses: actions/checkout@v2
@@ -35,7 +36,8 @@ jobs:
       - name: Setup CDK and deploy project
         run: |
           npm install
-          npm run cdk bootstrap
-          npm run cdk synth
           npm run cdk deploy -- --require-approval=never
+        env:
+          STACK_NAME: SoundCarStackProd
+          STACK_REGION: ${{ env.AWS_REGION }}
 
