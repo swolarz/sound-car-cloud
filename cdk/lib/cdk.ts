@@ -10,10 +10,25 @@ export class SoundCarCloudStack extends cdk.Stack {
       super(scope, id, props);
 
       const authorizationHeaderName = "Authorization";
-      const userPool = new cognito.UserPool(this, id + "SoundCarCloudStackPool", {
-          passwordPolicy: {
+      const userPool = new cognito.UserPool(this, id + "SoundCarCloudStackUserPool", {
+        signInAliases: {
+          username: true,
+          email: true,
+        },
+        autoVerify: {
+          email: true,
+          phone: false,
+        },
+        selfSignUpEnabled: true,
+        userVerification: {
+          emailSubject: 'Verify your email for our awesome app!',
+          emailBody: 'Hello, Thanks for signing up to our awesome app! Your verification code is {####}',
+          emailStyle: cognito.VerificationEmailStyle.CODE,
+          smsMessage: 'Hello, Thanks for signing up to our awesome app! Your verification code is {####}',
+        }, 
+        passwordPolicy: {
               minLength: 6
-          },
+        }
       });
 
       const lambdaCodeAsset = lambda.Code.fromAsset('../lambda/src');
@@ -44,12 +59,20 @@ export class SoundCarCloudStack extends cdk.Stack {
       authorizer: { authorizerId: auth.ref }
     });
 
-    const uiBucket = new s3.Bucket(this, 'SoundCarCloudUIBucket');
+    const uiBucket = new s3.Bucket(this, 'SoundCarCloudUIBucket', {
+      publicReadAccess: true,
+      removalPolicy: cdk.RemovalPolicy.DESTROY
+    });
+    const uiBucketName = uiBucket.bucketName;
+    const cloudFrontOia = new cloudfront.OriginAccessIdentity(this, 'OIA', {
+      comment: `OIA for ${uiBucket.bucketName}`
+    });
     const distribution = new cloudfront.CloudFrontWebDistribution(this, 'SoundCarCloudUIDistribution', {
       originConfigs: [
         {
           s3OriginSource: {
             s3BucketSource: uiBucket,
+            originAccessIdentity: cloudFrontOia
           },
           behaviors: [{isDefaultBehavior: true}]
         }
@@ -69,7 +92,7 @@ export class SoundCarCloudStack extends cdk.Stack {
       allowedOAuthFlowsUserPoolClient: true,
       allowedOAuthFlows: ["code"],
       allowedOAuthScopes: ["phone", "email", "openid", "profile"],
-      explicitAuthFlows: ["ALLOW_REFRESH_TOKEN_AUTH"],
+      explicitAuthFlows: ["ALLOW_REFRESH_TOKEN_AUTH", "ALLOW_USER_SRP_AUTH", "ALLOW_USER_PASSWORD_AUTH"],
       preventUserExistenceErrors: "ENABLED",
       generateSecret: false,
       refreshTokenValidity: 1,
@@ -111,7 +134,7 @@ export class SoundCarCloudStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, "UIBucketName", {
       description: "The frontend app's bucket name",
-      value: uiBucket.bucketName
+      value: uiBucketName
     });
   }
 }

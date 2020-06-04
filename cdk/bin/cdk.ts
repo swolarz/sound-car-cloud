@@ -6,4 +6,6 @@ import {Utils} from "../lib/utils";
 
 const app = new cdk.App();
 const stackName = Utils.getEnv("STACK_NAME");
-new SoundCarCloudStack(app, stackName);
+const stack = new SoundCarCloudStack(app, stackName);
+
+stack.templateOptions.transforms = ["AWS::Serverless-2016-10-31"];
