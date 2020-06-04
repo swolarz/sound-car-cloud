@@ -8,76 +8,109 @@ import * as iam from "@aws-cdk/aws-iam";
 import * as sqs from "@aws-cdk/aws-sqs"
 import * as s3n from "@aws-cdk/aws-s3-notifications";
 import * as sqses from "@aws-cdk/aws-lambda-event-sources";
+import * as elasticsearch from '@aws-cdk/aws-elasticsearch';
+
 
 export class SoundCarCloudStack extends cdk.Stack {
-    constructor(scope: cdk.Construct, id: string, fromEmail: string, sesRegion: string, props?: cdk.StackProps) {
-      super(scope, id, props);
+  constructor(scope: cdk.Construct, id: string, fromEmail: string, sesRegion: string, props?: cdk.StackProps) {
+    super(scope, id, props);
 
-      const userPool = new cognito.UserPool(this, id + "SoundCarCloudStackUserPool", {
-        signInAliases: {
-          username: true,
-          email: true,
-        },
-        autoVerify: {
-          email: true,
-          phone: false,
-        },
-        selfSignUpEnabled: true,
-        userVerification: {
-          emailSubject: 'Verify your email for our awesome app!',
-          emailBody: 'Hello, Thanks for signing up to our awesome app! Your verification code is {####}',
-          emailStyle: cognito.VerificationEmailStyle.CODE,
-          smsMessage: 'Hello, Thanks for signing up to our awesome app! Your verification code is {####}',
-        }, 
-        passwordPolicy: {
-              minLength: 6
-        }
-      });
-
-      const lambdaCodeAsset = lambda.Code.fromAsset('../lambda/src');
-      const helloLambda = new lambda.Function(this, "HelloHandler", {
-        runtime: lambda.Runtime.PYTHON_3_7,
-        code: lambdaCodeAsset,
-        handler: "lambda.handler"
-      });
-
-      helloLambda.addToRolePolicy(new iam.PolicyStatement(
-        {
-          resources: [userPool.userPoolArn],
-          actions: [
-            "cognito-idp:AdminUserGlobalSignOut",
-            "cognito-idp:AdminGetUser"
-          ]
-        })
-      );
-  
-      const api = new apigateway.RestApi(this, id + "HelloAPI", {
-        defaultCorsPreflightOptions: {
-          allowOrigins: ["*"],
-          allowHeaders: ['Authorization', "Access-Control-Allow-Origin", "Content-Type"]
-        }
-      });
-      const helloLambdaIntegration = new apigateway.LambdaIntegration(helloLambda, {
-        proxy: true
-      });
-
-      const auth = new apigateway.CfnAuthorizer(this, 'APIGatewayAuthorizer', {
-        name: 'customer-authorizer',
-        identitySource: 'method.request.header.Authorization',
-        providerArns: [userPool.userPoolArn],
-        restApiId: api.restApiId,
-        type: apigateway.AuthorizationType.COGNITO,
-      });
-
-      const globalCognitoSecuredMethodOptions = {
-        authorizationType: apigateway.AuthorizationType.COGNITO,
-        authorizer: { authorizerId: auth.ref },
+    const userPool = new cognito.UserPool(this, id + "SoundCarCloudStackUserPool", {
+      signInAliases: {
+        username: true,
+        email: true,
+      },
+      autoVerify: {
+        email: true,
+        phone: false,
+      },
+      selfSignUpEnabled: true,
+      userVerification: {
+        emailSubject: 'Verify your email for our awesome app!',
+        emailBody: 'Hello, Thanks for signing up to our awesome app! Your verification code is {####}',
+        emailStyle: cognito.VerificationEmailStyle.CODE,
+        smsMessage: 'Hello, Thanks for signing up to our awesome app! Your verification code is {####}',
+      }, 
+      passwordPolicy: {
+            minLength: 6
       }
+    });
 
-      const getOnRoot = api.root.addMethod('GET', 
-        helloLambdaIntegration, 
-        globalCognitoSecuredMethodOptions
-      );
+    // Elasticsearch
+    const elasticsearchDomain = new elasticsearch.CfnDomain(this, "DomainElasticsearchCluster", {
+      domainName: this.stackName,
+      elasticsearchClusterConfig: {
+        instanceCount: 1,
+        instanceType: 't2.small.elasticsearch'
+      },
+      ebsOptions: {
+        ebsEnabled: true,
+        volumeSize: 10
+      },
+      cognitoOptions: {
+        enabled: true,
+        userPoolId: userPool.userPoolId
+      },
+      encryptionAtRestOptions: {
+        enabled: true
+      },
+      nodeToNodeEncryptionOptions: {
+        enabled: true
+      },
+      elasticsearchVersion: '7.4'
+    });
+
+    // Lambda functions
+    const lambdaCodeAsset = lambda.Code.fromAsset('../lambda/src');
+    const helloLambda = new lambda.Function(this, "HelloHandler", {
+      runtime: lambda.Runtime.PYTHON_3_7,
+      code: lambdaCodeAsset,
+      handler: "lambda.handler",
+      environment: {
+        USER_POOL_ID: userPool.userPoolId,
+        AUTHORIZATION_HEADER_NAME: authorizationHeaderName,
+      }
+    });
+
+    helloLambda.addToRolePolicy(new iam.PolicyStatement(
+      {
+        resources: [userPool.userPoolArn],
+        actions: [
+          "cognito-idp:AdminUserGlobalSignOut",
+          "cognito-idp:AdminGetUser"
+        ]
+      })
+    );
+
+    // Rest API
+    const api = new apigateway.RestApi(this, id + "HelloAPI", {
+      defaultCorsPreflightOptions: {
+        allowOrigins: ["*"],
+        allowHeaders: ['Authorization', "Access-Control-Allow-Origin", "Content-Type"]
+      }
+    });
+
+    const helloLambdaIntegration = new apigateway.LambdaIntegration(helloLambda, {
+      proxy: true
+    });
+
+    const auth = new apigateway.CfnAuthorizer(this, 'APIGatewayAuthorizer', {
+      name: 'customer-authorizer',
+      identitySource: 'method.request.header.Authorization',
+      providerArns: [userPool.userPoolArn],
+      restApiId: api.restApiId,
+      type: apigateway.AuthorizationType.COGNITO,
+    });
+
+    const globalCognitoSecuredMethodOptions = {
+      authorizationType: apigateway.AuthorizationType.COGNITO,
+      authorizer: { authorizerId: auth.ref },
+    }
+
+    const getOnRoot = api.root.addMethod('GET', 
+      helloLambdaIntegration, 
+      globalCognitoSecuredMethodOptions
+    );
 
     const uiBucket = new s3.Bucket(this, 'SoundCarCloudUIBucket', {
       publicReadAccess: true,
