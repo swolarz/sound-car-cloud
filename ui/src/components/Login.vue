@@ -71,7 +71,6 @@ export default {
         const user = await Auth.currentAuthenticatedUser();
         this.$store.state.signedIn = true;
         this.$store.state.user = user;
-        console.log(user);
       } catch(err) {
         this.$store.state.signedIn = false;
         this.$store.state.user = null;
