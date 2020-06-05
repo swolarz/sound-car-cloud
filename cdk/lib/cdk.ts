@@ -37,26 +37,32 @@ export class SoundCarCloudStack extends cdk.Stack {
         runtime: lambda.Runtime.PYTHON_3_7,
         code: lambdaCodeAsset,
         handler: "lambda.handler",
-        environment: {
-            USER_POOL_ID: userPool.userPoolId,
-            AUTHORIZATION_HEADER_NAME: authorizationHeaderName,
-        }
+        // environment: {
+        //     USER_POOL_ID: userPool.userPoolId,
+        //     AUTHORIZATION_HEADER_NAME: authorizationHeaderName,
+        // }
       });
   
-      const api = new apigateway.RestApi(this, id + "HelloAPI");
+      const api = new apigateway.RestApi(this, id + "HelloAPI", {
+        defaultCorsPreflightOptions: {
+          allowOrigins: ["*"],
+          //allowHeaders: ['Access-Control-Allow-Origin', 'Origin', 'Content-Type', 'Access-Control-Request-Method', 'Access-Control-Request-Headers', 'Authorization']
+          allowHeaders: ['Authorization', "Access-Control-Allow-Origin"]
+        }
+      });
       const helloLambdaIntegration = new apigateway.LambdaIntegration(helloLambda);
 
-      const auth = new apigateway.CfnAuthorizer(this, 'APIGatewayAuthorizer', {
-        name: 'customer-authorizer',
-        identitySource: 'method.request.header.Authorization',
-        providerArns: [userPool.userPoolArn],
-        restApiId: api.restApiId,
-        type: apigateway.AuthorizationType.COGNITO,
-    });
+    //   const auth = new apigateway.CfnAuthorizer(this, 'APIGatewayAuthorizer', {
+    //     name: 'customer-authorizer',
+    //     identitySource: 'method.request.header.Authorization',
+    //     providerArns: [userPool.userPoolArn],
+    //     restApiId: api.restApiId,
+    //     type: apigateway.AuthorizationType.COGNITO,
+    // });
 
-    const post = api.root.addMethod('GET', helloLambdaIntegration, {
-      authorizationType: apigateway.AuthorizationType.COGNITO,
-      authorizer: { authorizerId: auth.ref }
+    const getOnRoot = api.root.addMethod('GET', helloLambdaIntegration, {
+      //authorizationType: apigateway.AuthorizationType.COGNITO,
+      //authorizer: { authorizerId: auth.ref },
     });
 
     const uiBucket = new s3.Bucket(this, 'SoundCarCloudUIBucket', {

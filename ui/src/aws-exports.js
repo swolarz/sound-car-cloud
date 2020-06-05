@@ -1,11 +1,25 @@
 import aws_generated_exports from './autoGenConfig';
+import { Auth } from "aws-amplify"
 
 const awsmobile = {
-  "aws_project_region": aws_generated_exports.region,
-  "aws_cognito_region": aws_generated_exports.region,
-  "aws_user_pools_id": aws_generated_exports.cognitoUserPoolId,
-  "aws_user_pools_web_client_id": aws_generated_exports.cognitoUserPoolAppClientId,
-  "oauth": {}
+  Auth: {
+    region: aws_generated_exports.regio,
+    userPoolId: aws_generated_exports.cognitoUserPoolId,
+    userPoolWebClientId:  aws_generated_exports.cognitoUserPoolAppClientId,
+  },
+  API: {
+    endpoints: [
+      {
+        name: "hello",
+        endpoint: aws_generated_exports.apiUrl,
+        custom_header: async () => { 
+          return { 
+            Authorization: `Bearer ${(await Auth.currentSession()).getAccessToken().getJwtToken()}`,
+          }
+        }
+      },
+    ],
+  },
 };
 
 
