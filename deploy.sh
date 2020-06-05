@@ -9,5 +9,5 @@ npm run generate-config -- "${STACK_NAME}" "${STACK_REGION}" ../ui/src/autoGenCo
 cd ../ui
 
 export BUCKET_NAME=$(node --print "require('./src/autoGenConfig.js').uiBucketName")
-npm run build &> /dev/null
+npm run build
 aws s3 sync --delete ./dist/ "s3://${BUCKET_NAME}"
