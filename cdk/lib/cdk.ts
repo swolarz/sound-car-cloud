@@ -10,7 +10,6 @@ export class SoundCarCloudStack extends cdk.Stack {
     constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
       super(scope, id, props);
 
-      const authorizationHeaderName = "Authorization";
       const userPool = new cognito.UserPool(this, id + "SoundCarCloudStackUserPool", {
         signInAliases: {
           username: true,
@@ -33,15 +32,10 @@ export class SoundCarCloudStack extends cdk.Stack {
       });
 
       const lambdaCodeAsset = lambda.Code.fromAsset('../lambda/src');
-  
       const helloLambda = new lambda.Function(this, "HelloHandler", {
         runtime: lambda.Runtime.PYTHON_3_7,
         code: lambdaCodeAsset,
-        handler: "lambda.handler",
-        // environment: {
-        //     USER_POOL_ID: userPool.userPoolId,
-        //     AUTHORIZATION_HEADER_NAME: authorizationHeaderName,
-        // }
+        handler: "lambda.handler"
       });
 
       helloLambda.addToRolePolicy(new iam.PolicyStatement(
@@ -57,7 +51,6 @@ export class SoundCarCloudStack extends cdk.Stack {
       const api = new apigateway.RestApi(this, id + "HelloAPI", {
         defaultCorsPreflightOptions: {
           allowOrigins: ["*"],
-          //allowHeaders: ['Access-Control-Allow-Origin', 'Origin', 'Content-Type', 'Access-Control-Request-Method', 'Access-Control-Request-Headers', 'Authorization']
           allowHeaders: ['Authorization', "Access-Control-Allow-Origin"]
         }
       });
