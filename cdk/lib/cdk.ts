@@ -4,6 +4,7 @@ import * as apigateway from '@aws-cdk/aws-apigateway';
 import * as cognito from "@aws-cdk/aws-cognito";
 import * as s3 from "@aws-cdk/aws-s3";
 import * as cloudfront from "@aws-cdk/aws-cloudfront";
+import * as iam from "@aws-cdk/aws-iam";
 
 export class SoundCarCloudStack extends cdk.Stack {
     constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
@@ -42,6 +43,16 @@ export class SoundCarCloudStack extends cdk.Stack {
         //     AUTHORIZATION_HEADER_NAME: authorizationHeaderName,
         // }
       });
+
+      helloLambda.addToRolePolicy(new iam.PolicyStatement(
+        {
+          resources: [userPool.userPoolArn],
+          actions: [
+            "cognito-idp:AdminUserGlobalSignOut",
+            "cognito-idp:AdminGetUser"
+          ]
+        })
+      );
   
       const api = new apigateway.RestApi(this, id + "HelloAPI", {
         defaultCorsPreflightOptions: {
@@ -50,20 +61,22 @@ export class SoundCarCloudStack extends cdk.Stack {
           allowHeaders: ['Authorization', "Access-Control-Allow-Origin"]
         }
       });
-      const helloLambdaIntegration = new apigateway.LambdaIntegration(helloLambda);
+      const helloLambdaIntegration = new apigateway.LambdaIntegration(helloLambda, {
+        proxy: true
+      });
 
-    //   const auth = new apigateway.CfnAuthorizer(this, 'APIGatewayAuthorizer', {
-    //     name: 'customer-authorizer',
-    //     identitySource: 'method.request.header.Authorization',
-    //     providerArns: [userPool.userPoolArn],
-    //     restApiId: api.restApiId,
-    //     type: apigateway.AuthorizationType.COGNITO,
-    // });
+      const auth = new apigateway.CfnAuthorizer(this, 'APIGatewayAuthorizer', {
+        name: 'customer-authorizer',
+        identitySource: 'method.request.header.Authorization',
+        providerArns: [userPool.userPoolArn],
+        restApiId: api.restApiId,
+        type: apigateway.AuthorizationType.COGNITO,
+      });
 
-    const getOnRoot = api.root.addMethod('GET', helloLambdaIntegration, {
-      //authorizationType: apigateway.AuthorizationType.COGNITO,
-      //authorizer: { authorizerId: auth.ref },
-    });
+      const getOnRoot = api.root.addMethod('GET', helloLambdaIntegration, {
+        authorizationType: apigateway.AuthorizationType.COGNITO,
+        authorizer: { authorizerId: auth.ref },
+      });
 
     const uiBucket = new s3.Bucket(this, 'SoundCarCloudUIBucket', {
       publicReadAccess: true,

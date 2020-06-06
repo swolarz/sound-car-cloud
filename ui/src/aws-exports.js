@@ -14,7 +14,7 @@ const awsmobile = {
         endpoint: aws_generated_exports.apiUrl,
         custom_header: async () => { 
           return { 
-            Authorization: `Bearer ${(await Auth.currentSession()).getAccessToken().getJwtToken()}`,
+            Authorization: `Bearer ${(await Auth.currentSession()).getIdToken().getJwtToken()}`
           }
         }
       },
