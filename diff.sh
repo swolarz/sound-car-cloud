@@ -1,4 +1,4 @@
 source ./env.sh
 
 cd cdk
-cdk diff
+npm run cdk diff

@@ -2,8 +2,8 @@ source ./env.sh
 
 cd cdk
 
-cdk bootstrap
-cdk deploy
+npm run cdk bootstrap
+npm run cdk deploy
 npm run generate-config -- "${STACK_NAME}" "${STACK_REGION}" ../ui/src/autoGenConfig.js
 
 cd ../ui

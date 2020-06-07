@@ -2,4 +2,4 @@ source ./env.sh
 
 cd cdk
 
-cdk destroy
+npm run cdk destroy
