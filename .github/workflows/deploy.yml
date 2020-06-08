@@ -49,6 +49,7 @@ jobs:
         working-directory: ./ui
         run: |
           export BUCKET_NAME=$(node --print "require('./src/autoGenConfig.js').uiBucketName")
+          npm install
           npm run build
           aws s3 sync --delete ./dist/ "s3://${BUCKET_NAME}"
 
