@@ -40,6 +40,7 @@ jobs:
           npm run cdk bootstrap
           npm run cdk synth
           npm run cdk deploy -- --require-approval=never
+          npm run generate-config -- "${STACK_NAME}" "${STACK_REGION}" ../ui/src/autoGenConfig.js
         env:
           STACK_NAME: SoundCarStackProd
           STACK_REGION: ${{ env.AWS_REGION }}
