@@ -37,8 +37,19 @@ jobs:
         working-directory: ./cdk
         run: |
           npm install
+          npm run cdk bootstrap
+          npm run cdk synth
           npm run cdk deploy -- --require-approval=never
+          npm run generate-config -- "${STACK_NAME}" "${STACK_REGION}" ../ui/src/autoGenConfig.js
         env:
           STACK_NAME: SoundCarStackProd
           STACK_REGION: ${{ env.AWS_REGION }}
+
+      - name: Build website and deploy
+        working-directory: ./ui
+        run: |
+          export BUCKET_NAME=$(node --print "require('./src/autoGenConfig.js').uiBucketName")
+          npm install
+          npm run build
+          aws s3 sync --delete ./dist/ "s3://${BUCKET_NAME}"
 
