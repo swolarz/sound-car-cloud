@@ -3,22 +3,22 @@ import os
 import uuid
 import json
 import base64
+import re
 
 s3client = boto3.client("s3")
 bucket = os.getenv("Bucket")
 
 def upload(event, context):
 
-    print(event)
-
-    photoId = str(uuid.uuid4()) + ".jpg"
-
     request_body = json.loads(event['body'])
+    imageData = request_body["photo"].split(',')[1]
+    extenstion = re.split(";|/", request_body["photo"])[1]
+    photoId = str(uuid.uuid4()) + "." + extenstion
 
     s3client.put_object(
         Bucket=bucket,
         Key=photoId,
-        Body=base64.b64decode(request_body["photo"])
+        Body=base64.b64decode(imageData)
     )
 
     return {
