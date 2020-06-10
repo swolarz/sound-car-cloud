@@ -17,7 +17,8 @@ class GenerateCognitoConfig {
         const apiURL = outputsByName.get("APIUrlOutput");
         const appURL = outputsByName.get("AppUrl");
         const uiBucketName = outputsByName.get("UIBucketName") || "";
-    
+        const uploadPhotosPath = outputsByName.get("UploadPhotosPath");
+
         const cognitoDomain = `${cognitoDomainPrefix}.auth.${region}.amazoncognito.com`;
         const params = {
           cognitoDomain: cognitoDomain,
@@ -26,7 +27,8 @@ class GenerateCognitoConfig {
           cognitoUserPoolAppClientId: appClientId,
           apiUrl: apiURL,
           appUrl: appURL,
-          uiBucketName: uiBucketName
+          uiBucketName: uiBucketName,
+          uploadPhotosPath: uploadPhotosPath
         };
     
         const autoGenConfigFile = "// this file is auto generated, do not edit it directly\n" +

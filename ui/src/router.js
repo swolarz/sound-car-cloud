@@ -3,6 +3,7 @@ import Router from 'vue-router'
 import Home from './views/Home.vue'
 import Secret from './views/Secret.vue'
 import SignUp from './components/SignUp.vue'
+import Upload from './views/Upload.vue'
 
 
 Vue.use(Router)
@@ -20,6 +21,12 @@ const router = new Router({
       path: '/secret',
       name: 'secret',
       component: Secret,
+      meta: { requiresAuth: true}
+    },
+    {
+      path: '/upload',
+      name: 'upload',
+      component: Upload,
       meta: { requiresAuth: true}
     },
     {

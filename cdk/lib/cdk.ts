@@ -51,7 +51,7 @@ export class SoundCarCloudStack extends cdk.Stack {
       const api = new apigateway.RestApi(this, id + "HelloAPI", {
         defaultCorsPreflightOptions: {
           allowOrigins: ["*"],
-          allowHeaders: ['Authorization', "Access-Control-Allow-Origin"]
+          allowHeaders: ['Authorization', "Access-Control-Allow-Origin", "Content-Type"]
         }
       });
       const helloLambdaIntegration = new apigateway.LambdaIntegration(helloLambda, {
@@ -66,10 +66,15 @@ export class SoundCarCloudStack extends cdk.Stack {
         type: apigateway.AuthorizationType.COGNITO,
       });
 
-      const getOnRoot = api.root.addMethod('GET', helloLambdaIntegration, {
+      const globalCognitoSecuredMethodOptions = {
         authorizationType: apigateway.AuthorizationType.COGNITO,
         authorizer: { authorizerId: auth.ref },
-      });
+      }
+
+      const getOnRoot = api.root.addMethod('GET', 
+        helloLambdaIntegration, 
+        globalCognitoSecuredMethodOptions
+      );
 
     const uiBucket = new s3.Bucket(this, 'SoundCarCloudUIBucket', {
       publicReadAccess: true,
@@ -113,6 +118,31 @@ export class SoundCarCloudStack extends cdk.Stack {
       userPoolId: userPool.userPoolId
     });
 
+    const photosBucket = new s3.Bucket(this, 'SoundCarCloudUIBucketPhotos', {
+      publicReadAccess: false,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    const uploadPhotosLambdaEnvironment = {
+      Bucket: photosBucket.bucketName
+    };
+
+    const uploadPhotosLambda = new lambda.Function(this, "UploadPhotosHandler", {
+      runtime: lambda.Runtime.PYTHON_3_7,
+      code: lambda.Code.fromAsset('../lambda/src/upload'),
+      handler: "photosUpload.upload",
+      environment: uploadPhotosLambdaEnvironment
+    });
+
+    photosBucket.grantWrite(uploadPhotosLambda);
+    
+    const photosUploadPath = "photosUpload";
+    const photosUpload = api.root.addResource(photosUploadPath);
+    photosUpload.addMethod("POST", 
+      new apigateway.LambdaIntegration(uploadPhotosLambda),
+      globalCognitoSecuredMethodOptions
+    );
+
     // outputs for aws-exports file
     new cdk.CfnOutput(this, "RegionOutput", {
       description: "Region",
@@ -147,6 +177,11 @@ export class SoundCarCloudStack extends cdk.Stack {
     new cdk.CfnOutput(this, "UIBucketName", {
       description: "The frontend app's bucket name",
       value: uiBucketName
+    });
+
+    new cdk.CfnOutput(this, "UploadPhotosPath", {
+      description: "UploadPhotosPath",
+      value: api.url + photosUploadPath
     });
   }
 }

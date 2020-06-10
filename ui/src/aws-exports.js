@@ -18,6 +18,16 @@ const awsmobile = {
           }
         }
       },
+      {
+        name: "uploadPhotos",
+        endpoint: aws_generated_exports.uploadPhotosPath,
+        custom_header: async () => { 
+          return { 
+            Authorization: `Bearer ${(await Auth.currentSession()).getIdToken().getJwtToken()}`,
+            "Content-Type": 'application/json' 
+          }
+        }
+      }
     ],
   },
 };

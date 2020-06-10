@@ -2,7 +2,8 @@
   <div id="app">
     <div id="nav">
       <router-link to="/">Home</router-link> |
-      <router-link v-if="this.$store.state.signedIn" to="/secret">Secret</router-link>
+      <router-link v-if="this.$store.state.signedIn" to="/secret">Secret</router-link> |
+      <router-link v-if="this.$store.state.signedIn" to="/upload">Upload</router-link>
       <router-link v-if="!this.$store.state.signedIn" to="/signUp">SignUp</router-link>
     </div>
     <router-view/>
