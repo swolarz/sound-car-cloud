@@ -5,6 +5,8 @@ import * as cognito from "@aws-cdk/aws-cognito";
 import * as s3 from "@aws-cdk/aws-s3";
 import * as cloudfront from "@aws-cdk/aws-cloudfront";
 import * as iam from "@aws-cdk/aws-iam";
+import * as sqs from "@aws-cdk/aws-sqs"
+import * as s3n from "@aws-cdk/aws-s3-notifications";
 
 export class SoundCarCloudStack extends cdk.Stack {
     constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
@@ -142,6 +144,12 @@ export class SoundCarCloudStack extends cdk.Stack {
       new apigateway.LambdaIntegration(uploadPhotosLambda),
       globalCognitoSecuredMethodOptions
     );
+
+    const createdPhotosQueue = new sqs.Queue(this, "CreatedPhotosQuque", {
+      visibilityTimeout: cdk.Duration.minutes(5),
+    });
+    photosBucket.addObjectCreatedNotification(new s3n.SqsDestination(createdPhotosQueue));
+
 
     // outputs for aws-exports file
     new cdk.CfnOutput(this, "RegionOutput", {
