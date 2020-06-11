@@ -7,6 +7,7 @@ import * as cloudfront from "@aws-cdk/aws-cloudfront";
 import * as iam from "@aws-cdk/aws-iam";
 import * as sqs from "@aws-cdk/aws-sqs"
 import * as s3n from "@aws-cdk/aws-s3-notifications";
+import * as sqses from "@aws-cdk/aws-lambda-event-sources";
 
 export class SoundCarCloudStack extends cdk.Stack {
     constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
@@ -150,6 +151,13 @@ export class SoundCarCloudStack extends cdk.Stack {
     });
     photosBucket.addObjectCreatedNotification(new s3n.SqsDestination(createdPhotosQueue));
 
+    const photoRecognizer = new lambda.Function(this, "PhotoRecognizer", {
+      runtime: lambda.Runtime.PYTHON_3_7,
+      code: lambda.Code.fromAsset('../lambda/src/validators'),
+      handler: "carOnPhotoValidator.validate",
+      environment: uploadPhotosLambdaEnvironment,
+    });
+    photoRecognizer.addEventSource(new sqses.SqsEventSource(createdPhotosQueue, { batchSize: 1 }));
 
     // outputs for aws-exports file
     new cdk.CfnOutput(this, "RegionOutput", {
