@@ -158,6 +158,12 @@ export class SoundCarCloudStack extends cdk.Stack {
       environment: uploadPhotosLambdaEnvironment,
     });
     photoRecognizer.addEventSource(new sqses.SqsEventSource(createdPhotosQueue, { batchSize: 1 }));
+    photosBucket.grantRead(photoRecognizer);
+    photoRecognizer.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["rekognition:DetectLabels"],
+        resources: ["*"],
+    }));
 
     // outputs for aws-exports file
     new cdk.CfnOutput(this, "RegionOutput", {
