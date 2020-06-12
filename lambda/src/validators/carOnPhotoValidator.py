@@ -1,7 +1,9 @@
 import json
 import boto3
+import os
 
 rekog = boto3.client('rekognition')
+ses = boto3.client('ses')
 
 def validate(event, context):
     print('request: {}'.format(json.dumps(event)))
@@ -25,3 +27,34 @@ def validate(event, context):
             )
 
             print(response)
+
+            send_failure_email(os.getenv("FromEmail"))
+
+
+SENDER = os.getenv("FromEmail")
+AWS_REGION = os.getenv("SESRegion")
+SUBJECT = "Your photo is unacceptable"
+TEXT = "Your photo was not accepted by our filters."
+CHARSET = "UTF-8"
+
+def send_failure_email(destination_email):
+    response = ses.send_email(
+        Destination={
+            'ToAddresses': [
+                destination_email,
+            ],
+        },
+        Message={
+            'Body': {
+                'Text': {
+                    'Charset': CHARSET,
+                    'Data': TEXT,
+                },
+            },
+            'Subject': {
+                'Charset': CHARSET,
+                'Data': SUBJECT,
+            },
+        },
+        Source=SENDER,
+    )

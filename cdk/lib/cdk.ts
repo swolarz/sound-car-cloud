@@ -10,7 +10,7 @@ import * as s3n from "@aws-cdk/aws-s3-notifications";
 import * as sqses from "@aws-cdk/aws-lambda-event-sources";
 
 export class SoundCarCloudStack extends cdk.Stack {
-    constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
+    constructor(scope: cdk.Construct, id: string, fromEmail: string, sesRegion: string, props?: cdk.StackProps) {
       super(scope, id, props);
 
       const userPool = new cognito.UserPool(this, id + "SoundCarCloudStackUserPool", {
@@ -151,17 +151,28 @@ export class SoundCarCloudStack extends cdk.Stack {
     });
     photosBucket.addObjectCreatedNotification(new s3n.SqsDestination(createdPhotosQueue));
 
+    const photoRecognizerEnvironment = {
+      FromEmail: fromEmail,
+      SESRegion: sesRegion,
+    };
+
     const photoRecognizer = new lambda.Function(this, "PhotoRecognizer", {
       runtime: lambda.Runtime.PYTHON_3_7,
       code: lambda.Code.fromAsset('../lambda/src/validators'),
       handler: "carOnPhotoValidator.validate",
-      environment: uploadPhotosLambdaEnvironment,
+      environment: photoRecognizerEnvironment,
     });
     photoRecognizer.addEventSource(new sqses.SqsEventSource(createdPhotosQueue, { batchSize: 1 }));
     photosBucket.grantRead(photoRecognizer);
     photoRecognizer.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ["rekognition:DetectLabels"],
+        resources: ["*"],
+    }));
+
+    photoRecognizer.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["ses:SendEmail"],
         resources: ["*"],
     }));
 
