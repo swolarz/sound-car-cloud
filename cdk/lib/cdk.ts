@@ -9,6 +9,7 @@ import * as sqs from "@aws-cdk/aws-sqs"
 import * as s3n from "@aws-cdk/aws-s3-notifications";
 import * as sqses from "@aws-cdk/aws-lambda-event-sources";
 import * as elasticsearch from '@aws-cdk/aws-elasticsearch';
+import * as customresource from '@aws-cdk/custom-resources';
 
 
 export class SoundCarCloudStack extends cdk.Stack {
@@ -45,11 +46,10 @@ export class SoundCarCloudStack extends cdk.Stack {
           {
             Effect: 'Allow',
             Principal: {
-              AWS: '${this.account}',
-              Service: 'lambda.amazonaws.com'
+              AWS: this.account
             },
             Action: 'es:*',
-            Resource: 'arn:aws:es:${this.region}:${this.account}:domain/${this.stackName}/*'
+            Resource: `arn:aws:es:${this.region}:${this.account}:domain/${this.stackName}/*`
           }
         ]
       },
@@ -72,6 +72,33 @@ export class SoundCarCloudStack extends cdk.Stack {
         enabled: true
       },
       elasticsearchVersion: '7.4'
+    });
+
+    // Elasticsearch index initialization
+    const carStorageCodeAsset = lambda.Code.fromAsset('../lambda/src/car-storage');
+    const initCarStorageIndexLambda = new lambda.Function(this, 'InitCarStorageIndexHandler', {
+      runtime: lambda.Runtime.PYTHON_3_7,
+      code: carStorageCodeAsset,
+      handler: 'init_cars_index.handler',
+      environment: {
+        ELASTICSEARCH_SERVICE_ENDPOINT: elasticsearchDomain.attrDomainEndpoint,
+          USER_POOL_ID: userPool.userPoolId,
+          AUTHORIZATION_HEADER_NAME: authorizationHeaderName
+      }
+    })
+
+    new customresource.AwsCustomResource(this, 'initCarStorageEsIndexResource', {
+      onCreate: {
+        service: 'Lambda',
+        action: 'Invoke',
+        parameters: {
+          FunctionName: initCarStorageIndexLambda.functionArn,
+          InvocationType: 'Event'
+        }
+      },
+      policy: {
+        statements: []
+      }
     });
 
     // Lambda functions
