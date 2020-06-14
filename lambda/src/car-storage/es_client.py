@@ -4,7 +4,7 @@ from elasticsearch import Elasticsearch, RequestsHttpConnection
 def get_elasticsearch_client(es_endpoint: str) -> Elasticsearch:
     try:
         es = Elasticsearch(
-            hosts=[es_endpoint + ":80"],
+            hosts=[{'host': es_endpoint, 'port': 443, 'use_ssl': True}],
             connection_class=RequestsHttpConnection
         )
 
