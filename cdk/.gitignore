@@ -10,3 +10,6 @@ cdk.out
 # Parcel build directories
 .cache
 .build
+
+# CloudFormation synth output
+cloudformation-synth-output.yml

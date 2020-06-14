@@ -8,11 +8,15 @@ from cars_schema import schema as cars_schema
 
 
 def init_cars_index(es: Elasticsearch):
-    pass
+    index_name = 'sound-car-cloud'
+    index_exists = es.indices.exists(index_name)
+
+    if not index_exists:
+        es.indices.create(index_name, body=cars_schema)
 
 
 def handler(event, context):
-    es_endpoint = os.getenviron('ELASTICSEARCH_SERVICE_ENDPOINT')
+    es_endpoint = os.getenv('ELASTICSEARCH_SERVICE_ENDPOINT')
 
     try:
         es: Elasticsearch = es_client.get_elasticsearch_client(es_endpoint)
@@ -24,7 +28,7 @@ def handler(event, context):
             'statusCode': 500,
             'headers': {
                 'Content-Type': 'application/json'
-            }
+            },
             'body': json.dumps({
                 'error': 'elasticsearch-client-connection',
                 'message': 'Elasticsearch service client connection error with endpoint = {}'.format(es_endpoint)

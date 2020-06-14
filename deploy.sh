@@ -3,6 +3,7 @@ source ./env.sh
 cd cdk
 
 npm run cdk bootstrap
+npm run cdk synth > cloudformation-synth-output.yml
 npm run cdk deploy
 npm run generate-config -- "${STACK_NAME}" "${STACK_REGION}" ../ui/src/autoGenConfig.js
 
