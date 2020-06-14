@@ -4,7 +4,7 @@ schema = {
         'number_of_replicas': 0
     },
     'mappings': {
-        'cars': {
+        #'cars': {
             'properties': {
                 'ownerId': {
                     'type': 'keyword'
@@ -44,6 +44,6 @@ schema = {
                     'type': 'text'
                 }
             }
-        }
+       # }
     }
 }
