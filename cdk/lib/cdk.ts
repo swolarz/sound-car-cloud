@@ -64,6 +64,7 @@ export class SoundCarCloudStack extends cdk.Stack {
       runtime: lambda.Runtime.PYTHON_3_7,
       code: carStorageCodeAsset,
       handler: 'init_cars_index.handler',
+      timeout: cdk.Duration.minutes(5),
       environment: {
         ELASTICSEARCH_SERVICE_ENDPOINT: elasticsearchDomain.attrDomainEndpoint,
           USER_POOL_ID: userPool.userPoolId,
