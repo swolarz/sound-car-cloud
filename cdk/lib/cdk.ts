@@ -75,7 +75,7 @@ export class SoundCarCloudStack extends cdk.Stack {
     initCarStorageIndexLambda.addToRolePolicy(
       new iam.PolicyStatement({
         actions: [ "es:*" ],
-        resources: [ `arn:aws:es:${this.region}:${this.account}:domain/${this.stackName}/*` ]
+        resources: [ "*" ]
       })
     );
 
