@@ -18,11 +18,13 @@ def init_cars_index(es: Elasticsearch):
 def handler(event, context):
     es_endpoint = os.getenv('ELASTICSEARCH_SERVICE_ENDPOINT')
 
+    logging.info('Connecting to Elasticsearch service at: {}'.format(es_endpoint))
+
     try:
         es: Elasticsearch = es_client.get_elasticsearch_client(es_endpoint)
         init_cars_index(es)
 
-    except Exception as e:
+    except Exception:
         logging.exception('Failed to initialize elasticsearch index')
         return {
             'statusCode': 500,

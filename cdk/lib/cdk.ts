@@ -10,7 +10,7 @@ import * as s3n from "@aws-cdk/aws-s3-notifications";
 import * as sqses from "@aws-cdk/aws-lambda-event-sources";
 import * as elasticsearch from '@aws-cdk/aws-elasticsearch';
 import * as customresource from '@aws-cdk/custom-resources';
-import { PolicyStatement } from '@aws-cdk/aws-iam';
+import * as iam from '@aws-cdk/aws-iam';
 
 
 export class SoundCarCloudStack extends cdk.Stack {
@@ -41,19 +41,6 @@ export class SoundCarCloudStack extends cdk.Stack {
     // Elasticsearch
     const elasticsearchDomain = new elasticsearch.CfnDomain(this, "DomainElasticsearchCluster", {
       domainName: 'sound-car-cloud-es',
-      accessPolicies: {
-        Version: '2012-10-17',
-        Statement: [
-          {
-            Effect: 'Allow',
-            Principal: {
-              AWS: this.account
-            },
-            Action: 'es:*',
-            Resource: `arn:aws:es:${this.region}:${this.account}:domain/${this.stackName}/*`
-          }
-        ]
-      },
       elasticsearchClusterConfig: {
         instanceCount: 1,
         instanceType: 't2.small.elasticsearch'
@@ -82,7 +69,14 @@ export class SoundCarCloudStack extends cdk.Stack {
           USER_POOL_ID: userPool.userPoolId,
           AUTHORIZATION_HEADER_NAME: authorizationHeaderName
       }
-    })
+    });
+
+    initCarStorageIndexLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: [ "es:*" ],
+        resources: [ `arn:aws:es:${this.region}:${this.account}:domain/${this.stackName}/*` ]
+      })
+    );
 
     new customresource.AwsCustomResource(this, 'initCarStorageEsIndexResource', {
       onCreate: {
@@ -95,7 +89,7 @@ export class SoundCarCloudStack extends cdk.Stack {
       },
       policy: {
         statements: [
-          new PolicyStatement({
+          new iam.PolicyStatement({
             actions: ['*'],
             resources: ['*']
           })
