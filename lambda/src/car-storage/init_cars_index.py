@@ -8,7 +8,7 @@ from cars_schema import schema as cars_schema
 
 
 def init_cars_index(es: Elasticsearch):
-    index_name = 'sound-car-cloud'
+    index_name = 'scc-cars'
     index_exists = es.indices.exists(index_name)
 
     if not index_exists:

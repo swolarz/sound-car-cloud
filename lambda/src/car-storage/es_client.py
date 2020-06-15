@@ -1,9 +1,11 @@
 from elasticsearch import Elasticsearch, RequestsHttpConnection
 from requests_aws4auth import AWS4Auth
 import boto3
+import os
+
 
 service = 'es'
-region = 'us-east-1'
+region = os.getenv('AWS_REGION')
 credentials = boto3.Session().get_credentials()
 awsauth = AWS4Auth(credentials.access_key, credentials.secret_key, region, service, session_token=credentials.token)
 

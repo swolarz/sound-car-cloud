@@ -59,7 +59,7 @@ export class SoundCarCloudStack extends cdk.Stack {
     });
 
     // Elasticsearch index initialization
-    const carStorageCodeAsset = lambda.Code.fromAsset('../elastic_code_pkg');
+    const carStorageCodeAsset = lambda.Code.fromAsset('../lambda/src/car-storage');
     const initCarStorageIndexLambda = new lambda.Function(this, 'InitCarStorageIndexHandler', {
       runtime: lambda.Runtime.PYTHON_3_7,
       code: carStorageCodeAsset,
@@ -67,15 +67,15 @@ export class SoundCarCloudStack extends cdk.Stack {
       timeout: cdk.Duration.minutes(1),
       environment: {
         ELASTICSEARCH_SERVICE_ENDPOINT: elasticsearchDomain.attrDomainEndpoint,
-          USER_POOL_ID: userPool.userPoolId,
-          AUTHORIZATION_HEADER_NAME: authorizationHeaderName
+        USER_POOL_ID: userPool.userPoolId,
+        AUTHORIZATION_HEADER_NAME: authorizationHeaderName
       }
     });
 
     initCarStorageIndexLambda.addToRolePolicy(
       new iam.PolicyStatement({
         actions: [ "es:*" ],
-        resources: [ elasticsearchDomain.attrArn + "*" ]
+        resources: [ elasticsearchDomain.attrArn + '*' ]
       })
     );
 
