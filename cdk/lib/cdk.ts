@@ -4,7 +4,6 @@ import * as apigateway from '@aws-cdk/aws-apigateway';
 import * as cognito from "@aws-cdk/aws-cognito";
 import * as s3 from "@aws-cdk/aws-s3";
 import * as cloudfront from "@aws-cdk/aws-cloudfront";
-import * as iam from "@aws-cdk/aws-iam";
 import * as sqs from "@aws-cdk/aws-sqs"
 import * as s3n from "@aws-cdk/aws-s3-notifications";
 import * as sqses from "@aws-cdk/aws-lambda-event-sources";
@@ -17,6 +16,7 @@ export class SoundCarCloudStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, fromEmail: string, sesRegion: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
+    const authorizationHeaderName = 'Authorization';
     const userPool = new cognito.UserPool(this, id + "SoundCarCloudStackUserPool", {
       signInAliases: {
         username: true,
