@@ -12,3 +12,6 @@ cdk.out
 # Parcel build directories
 .cache
 .build
+
+# Visual Studio Code
+.vscode
