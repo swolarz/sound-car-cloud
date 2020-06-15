@@ -12,21 +12,21 @@ schema = {
                 'engineSoundFile': {
                     'type': 'keyword'
                 },
-                'carPhotos': {
-                    'properties': {
-                        'main': {
-                            'type': 'keyword'
-                        },
-                        'all': {
-                            'properties': {
-                                'full': {
-                                    'type': 'keyword',
-                                    'thumbnail': 'keyword'
-                                }
-                            }
-                        }
-                    }
-                },
+                # 'carPhotos': {
+                #     'properties': {
+                #         'main': {
+                #             'type': 'keyword'
+                #         },
+                #         'all': {
+                #             'properties': {
+                #                 'full': {
+                #                     'type': 'keyword',
+                #                     'thumbnail': 'keyword'
+                #                 }
+                #             }
+                #         }
+                #     }
+                # },
                 'carDescription': {
                     'type': 'text'
                 },
