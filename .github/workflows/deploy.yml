@@ -44,6 +44,8 @@ jobs:
         env:
           STACK_NAME: SoundCarStackProd
           STACK_REGION: ${{ env.AWS_REGION }}
+          VERIFIED_MAIL: registration@carcloud.com
+          VERIFIED_MAIL_REGION: ${{ env.AWS_REGION }}
 
       - name: Build website and deploy
         working-directory: ./ui
