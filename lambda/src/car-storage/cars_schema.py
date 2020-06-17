@@ -28,10 +28,13 @@ schema = {
                     }
                 }
             },
+            'carTitle': {
+                'type': 'text'
+            },
             'carDescription': {
                 'type': 'text'
             },
-            'horsepower': {
+            'horsePower': {
                 'type': 'integer'
             },
             'mileage': {

@@ -71,7 +71,6 @@ export class SoundCarCloudStack extends cdk.Stack {
         AUTHORIZATION_HEADER_NAME: authorizationHeaderName
       }
     });
-
     initCarStorageIndexLambda.addToRolePolicy(
       new iam.PolicyStatement({
         actions: [ "es:*" ],
@@ -79,7 +78,7 @@ export class SoundCarCloudStack extends cdk.Stack {
       })
     );
 
-    new customresource.AwsCustomResource(this, 'initCarStorageEsIndexResource', {
+    new customresource.AwsCustomResource(this, 'initCarStorageEsIndexResource_v1', {
       onCreate: {
         service: 'Lambda',
         action: 'invoke',
@@ -95,6 +94,19 @@ export class SoundCarCloudStack extends cdk.Stack {
             resources: ['*']
           })
         ]
+      }
+    });
+
+    // Cars CRUD lambdas
+    const carInsertLambda = new lambda.Function(this, 'CarStorageInsertHandler', {
+      runtime: lambda.Runtime.PYTHON_3_7,
+      code: carStorageCodeAsset,
+      handler: 'car_insert.handler',
+      timeout: cdk.Duration.minutes(1),
+      environment: {
+        ELASTICSEARCH_SERVICE_ENDPOINT: elasticsearchDomain.attrDomainEndpoint,
+        USER_POOL_ID: userPool.userPoolId,
+        AUTHORIZATION_HEADER_NAME: authorizationHeaderName
       }
     });
 
@@ -128,10 +140,7 @@ export class SoundCarCloudStack extends cdk.Stack {
       }
     });
 
-    const helloLambdaIntegration = new apigateway.LambdaIntegration(helloLambda, {
-      proxy: true
-    });
-
+    // Cognito Authorization
     const auth = new apigateway.CfnAuthorizer(this, 'APIGatewayAuthorizer', {
       name: 'customer-authorizer',
       identitySource: 'method.request.header.Authorization',
@@ -145,11 +154,14 @@ export class SoundCarCloudStack extends cdk.Stack {
       authorizer: { authorizerId: auth.ref },
     }
 
-    const getOnRoot = api.root.addMethod('GET', 
-      helloLambdaIntegration, 
-      globalCognitoSecuredMethodOptions
-    );
+    // Lambda Rest Api
+    const helloLambdaIntegration = new apigateway.LambdaIntegration(helloLambda, { proxy: true });
+    const carInsertLambdaIntegration = new apigateway.LambdaIntegration(carInsertLambda, { proxy: true });
 
+    api.root.addMethod('GET', helloLambdaIntegration, globalCognitoSecuredMethodOptions);
+    api.root.addResource('cars').addMethod('POST', carInsertLambdaIntegration, globalCognitoSecuredMethodOptions);
+
+    // Web UI
     const uiBucket = new s3.Bucket(this, 'SoundCarCloudUIBucket', {
       publicReadAccess: true,
       removalPolicy: cdk.RemovalPolicy.DESTROY

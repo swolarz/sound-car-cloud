@@ -2,6 +2,7 @@ from elasticsearch import Elasticsearch, RequestsHttpConnection
 from requests_aws4auth import AWS4Auth
 import boto3
 import os
+import logging
 
 
 service = 'es'
@@ -12,6 +13,7 @@ awsauth = AWS4Auth(credentials.access_key, credentials.secret_key, region, servi
 
 def get_elasticsearch_client(es_endpoint: str) -> Elasticsearch:
     try:
+        logging.info('Connecting to Elasticsearch service at: {}'.format(es_endpoint))
         es = Elasticsearch(
             hosts=[{'host': es_endpoint, 'port': 443, 'use_ssl': True} ],
             connection_class=RequestsHttpConnection,
