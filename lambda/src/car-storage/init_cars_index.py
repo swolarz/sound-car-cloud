@@ -31,7 +31,7 @@ def handler(event, context):
             },
             'body': json.dumps({
                 'error': 'elasticsearch-client-connection',
-                'message': 'Elasticsearch service client connection error with endpoint = {}'.format(es_endpoint)
+                'message': 'Elasticsearch service is not available'
             })
         }
 
