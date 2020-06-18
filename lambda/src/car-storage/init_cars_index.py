@@ -4,11 +4,11 @@ import logging
 from elasticsearch import Elasticsearch
 
 import es_client
-from cars_schema import schema as cars_schema
+from cars_schema import schema as cars_schema, index_name as cars_index_name
 
 
 def init_cars_index(es: Elasticsearch):
-    index_name = 'scc-cars'
+    index_name = cars_index_name
     index_exists = es.indices.exists(index_name)
 
     if not index_exists:

@@ -1,3 +1,5 @@
+index_name = 'scc-cars'
+
 schema = {
     'settings': {
         'number_of_shards': 1,

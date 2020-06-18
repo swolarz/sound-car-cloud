@@ -109,6 +109,12 @@ export class SoundCarCloudStack extends cdk.Stack {
         AUTHORIZATION_HEADER_NAME: authorizationHeaderName
       }
     });
+    carInsertLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: [ "es:*" ],
+        resources: [ elasticsearchDomain.attrArn + '*' ]
+      })
+    );
 
     // Lambda functions
     const lambdaCodeAsset = lambda.Code.fromAsset('../lambda/src');

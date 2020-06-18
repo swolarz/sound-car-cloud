@@ -7,6 +7,7 @@ from jsonschema import validate, ValidationError
 from elasticsearch import Elasticsearch
 
 import es_client
+from cars_schema import index_name as cars_index_name
 
 
 def response(status_code: int, response: object):
@@ -52,6 +53,7 @@ def handler(event, context):
         car_request = event['body']
         car_doc = prepare_car_document(car_request, context.identity.cognitoIdentityId)
 
+        car_doc = es.index(index=cars_index_name, body=car_doc)
         return response(200, car_doc)
 
     except ValidationError as e:
