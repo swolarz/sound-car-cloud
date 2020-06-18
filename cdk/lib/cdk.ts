@@ -165,7 +165,8 @@ export class SoundCarCloudStack extends cdk.Stack {
     const carInsertLambdaIntegration = new apigateway.LambdaIntegration(carInsertLambda, { proxy: true });
 
     api.root.addMethod('GET', helloLambdaIntegration, globalCognitoSecuredMethodOptions);
-    api.root.addResource('cars').addMethod('POST', carInsertLambdaIntegration, globalCognitoSecuredMethodOptions);
+    const carsHandlerPath = "cars";
+    api.root.addResource(carsHandlerPath).addMethod('POST', carInsertLambdaIntegration, globalCognitoSecuredMethodOptions);
 
     // Web UI
     const uiBucket = new s3.Bucket(this, 'SoundCarCloudUIBucket', {
@@ -304,6 +305,11 @@ export class SoundCarCloudStack extends cdk.Stack {
     new cdk.CfnOutput(this, "UploadPhotosPath", {
       description: "UploadPhotosPath",
       value: api.url + photosUploadPath
+    });
+
+    new cdk.CfnOutput(this, "CarsHandlerPath", {
+      description: "CarsHandlerPath",
+      value: api.url + carsHandlerPath
     });
   }
 }

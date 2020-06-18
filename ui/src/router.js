@@ -4,6 +4,7 @@ import Home from './views/Home.vue'
 import Secret from './views/Secret.vue'
 import SignUp from './components/SignUp.vue'
 import Upload from './views/Upload.vue'
+import Car from './views/Car.vue'
 
 
 Vue.use(Router)
@@ -34,6 +35,11 @@ const router = new Router({
       name: 'signUp',
       component: SignUp,
       meta: { forUnauthorized: true} 
+    },
+    {
+      path: '/cars',
+      name: 'cars',
+      component: Car,
     },
   ]
 })

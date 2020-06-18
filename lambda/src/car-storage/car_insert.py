@@ -14,7 +14,9 @@ def response(status_code: int, response: object):
     return {
         'statusCode': status_code,
         'headers': {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            "Access-Control-Allow-Credentials" : True,
+            "Access-Control-Allow-Origin": "*"
         },
         'body': json.dumps(response)
     }
