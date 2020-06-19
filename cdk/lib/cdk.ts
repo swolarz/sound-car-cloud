@@ -102,7 +102,6 @@ export class SoundCarCloudStack extends cdk.Stack {
       runtime: lambda.Runtime.PYTHON_3_7,
       code: carStorageCodeAsset,
       handler: 'car_insert.handler',
-      timeout: cdk.Duration.minutes(1),
       environment: {
         ELASTICSEARCH_SERVICE_ENDPOINT: elasticsearchDomain.attrDomainEndpoint,
         USER_POOL_ID: userPool.userPoolId,
@@ -112,6 +111,39 @@ export class SoundCarCloudStack extends cdk.Stack {
     carInsertLambda.addToRolePolicy(
       new iam.PolicyStatement({
         actions: [ "es:*" ],
+        resources: [ elasticsearchDomain.attrArn + '*' ]
+      })
+    );
+
+    // Cars CRUD lambdas
+    const carEditLambda = new lambda.Function(this, 'CarStorageEditHandler', {
+      runtime: lambda.Runtime.PYTHON_3_7,
+      code: carStorageCodeAsset,
+      handler: 'car_insert.put_car_handler',
+      environment: {
+        ELASTICSEARCH_SERVICE_ENDPOINT: elasticsearchDomain.attrDomainEndpoint,
+        USER_POOL_ID: userPool.userPoolId,
+        AUTHORIZATION_HEADER_NAME: authorizationHeaderName
+      }
+    });
+    carEditLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: [ "es:*" ],
+        resources: [ elasticsearchDomain.attrArn + '*' ]
+      })
+    );
+
+    const carGetLambda = new lambda.Function(this, 'CarStorageGetHandler', {
+      runtime: lambda.Runtime.PYTHON_3_7,
+      code: carStorageCodeAsset,
+      handler: 'car_insert.get_car_handler',
+      environment: {
+        ELASTICSEARCH_SERVICE_ENDPOINT: elasticsearchDomain.attrDomainEndpoint,
+      }
+    });
+    carGetLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: [ "es:ESHttpGet" ],
         resources: [ elasticsearchDomain.attrArn + '*' ]
       })
     );
@@ -161,12 +193,20 @@ export class SoundCarCloudStack extends cdk.Stack {
     }
 
     // Lambda Rest Api
-    const helloLambdaIntegration = new apigateway.LambdaIntegration(helloLambda, { proxy: true });
-    const carInsertLambdaIntegration = new apigateway.LambdaIntegration(carInsertLambda, { proxy: true });
+    const helloLambdaIntegration = new apigateway.LambdaIntegration(helloLambda,);
+    const carInsertLambdaIntegration = new apigateway.LambdaIntegration(carInsertLambda);
+    const carEditLambdaIntegration = new apigateway.LambdaIntegration(carEditLambda);
+    const carGetLambdaIntegration = new apigateway.LambdaIntegration(carGetLambda);
 
     api.root.addMethod('GET', helloLambdaIntegration, globalCognitoSecuredMethodOptions);
     const carsHandlerPath = "cars";
-    api.root.addResource(carsHandlerPath).addMethod('POST', carInsertLambdaIntegration, globalCognitoSecuredMethodOptions);
+    
+    const carsHandler = api.root.addResource(carsHandlerPath);
+    carsHandler.addMethod('POST', carInsertLambdaIntegration, globalCognitoSecuredMethodOptions);
+    
+    const carHandler = carsHandler.addResource('{car_id}')
+    carHandler.addMethod('PUT', carEditLambdaIntegration, globalCognitoSecuredMethodOptions);
+    carHandler.addMethod('GET', carGetLambdaIntegration);
 
     // Web UI
     const uiBucket = new s3.Bucket(this, 'SoundCarCloudUIBucket', {

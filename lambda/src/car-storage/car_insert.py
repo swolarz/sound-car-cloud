@@ -54,14 +54,12 @@ def get_car_document(es: Elasticsearch, car_id: str):
     return car_doc
 
 
-def handler(event, context):
-    user_id = event["requestContext"]["authorizer"]["claims"]["sub"]
-
+def get_es_client() -> Elasticsearch:
     es_endpoint = os.getenv('ELASTICSEARCH_SERVICE_ENDPOINT')
 
     # Connect to Elasticsearch service
     try:
-        es: Elasticsearch = es_client.get_elasticsearch_client(es_endpoint)
+        return es_client.get_elasticsearch_client(es_endpoint)
     except Exception:
         logging.exception('Failed to connect to Elasticsearch cluster')
         return response(500, {
@@ -69,26 +67,42 @@ def handler(event, context):
             'message': 'Elasticsearch service is not available'
         })
 
+
+def get_user_id(event): 
+    return event["requestContext"]["authorizer"]["claims"]["sub"]
+
+
+def prepare_car_doc(event_body, user_id):
     # Parse and validate new car request body
     try:
-        car_request = json.loads(event['body'])
-        car_doc = prepare_car_document(car_request, user_id)
+        car_request = json.loads(event_body)
+        return (True, prepare_car_document(car_request, user_id))
     except json.decoder.JSONDecodeError:
         logging.exception('Failed to decode request body json')
-        return response(400, {
+        return (False, response(400, {
             'error': 'car-invalid-request-format',
             'message': 'Invalid request body format - json expected'
-        })
+        }))
     except ValidationError as e:
         logging.exception('Invalid request body for new car document')
-        return response(400, {
+        return (False, response(400, {
             'error': 'car-invalid-request-data',
             'message': 'Invalid car data: {}'.format(e.message)
-        })
+        }))
+
+
+def handler(event, context):
+    es = get_es_client()
+    user_id = get_user_id(event)
+    
+    success, result = prepare_car_doc(event["body"], user_id)
+    
+    if not success:
+        return result
 
     # Index new car document in the Elasticsearch service
     try:
-        index_result = es.index(index=cars_index_name, body=car_doc)
+        index_result = es.index(index=cars_index_name, body=result)
     except Exception as e:
         logging.exception('Failed to insert new car')
         return response(500, {
@@ -97,4 +111,25 @@ def handler(event, context):
         })
 
     car_doc = get_car_document(es, index_result['_id'])
+    return response(200, car_doc)
+
+
+def put_car_handler(event, context):
+    user_id = get_user_id(event)
+    car_id = event["pathParameters"]["car_id"]
+
+    es = get_es_client()
+    car_doc = get_car_document(es, car_id)
+    if car_doc.ownerId != user_id:
+        return response(403, car_doc)
+
+    #TODO: edit car in DB
+
+
+def get_car_handler(event, context):
+    car_id = event["pathParameters"]["car_id"]
+    
+    es = get_es_client()
+    car_doc = get_car_document(es, car_id)
+    
     return response(200, car_doc)
