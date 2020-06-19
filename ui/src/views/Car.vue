@@ -1,5 +1,5 @@
 <template>
-  <div class="carEditor">
+  <div id="editCarDiv" class="carEditor">
     <p>Car title</p>
     <input v-model="car.title" type="text">
 
@@ -18,7 +18,7 @@
     <p>Production year</p>
     <input v-model="car.productionYear" type="number">
 
-    <button @click="save">Save</button>
+    <button id="saveBtn" @click="save">Save</button>
 
     <ErrorDisplayer v-bind:errorMsg="errorMsg" />
   </div>
@@ -45,7 +45,12 @@ export default {
         }
     },
     created: function() {
-        this.loadCar(this.$route.params.pathMatch)
+        if (this.$route.params.pathMatch){
+            var car = this.loadCarFromDB(this.$route.params.pathMatch)
+            if (car) {
+                this.loadCar(car)
+            }
+        }
     },
     methods: {
         save(){
@@ -66,10 +71,30 @@ export default {
                 this.errorMsg = error.response.data.message;
             });
         },
-        loadCar(carId) {
-            API.get('carsHandler', '/' + carId)
+        setUIToReadonly(){
+            document.getElementById('saveBtn').remove();
+
+            let inputs = document.getElementById('editCarDiv').getElementsByTagName('input');
+            for(let i = 0; i < inputs.length; i++) {
+                inputs[i].disabled = true;
+            }
+        },
+        loadCar(car) {
+            this.car.title = car.carTitle,
+            this.car.description = car.carDescription;
+            this.car.engine = car.engine;
+            this.car.horsePower = car.horsePower;
+            this.car.mileage = car.mileage;
+            this.car.productionYear = car.year;
+            
+            if (car.ownerId.localeCompare(this.$store.state.user.attributes.sub)) {
+                this.setUIToReadonly();
+            }
+        },
+        loadCarFromDB(carId) {
+            return API.get('carsHandler', '/' + carId)
             .then(response => {
-                console.log(response);
+                this.loadCar(response);
             })
             .catch(error => {
                 this.errorMsg = error.response.data.message;
