@@ -46,6 +46,7 @@ export default {
     },
     methods: {
         save(){
+            this.errorMsg = null;
             API.post('carsHandler', '', {
                 body: {
                     'carTitle': this.car.title,
@@ -59,8 +60,7 @@ export default {
                 console.log(response);
             })
             .catch(error => {
-                console.log(error);
-                this.errorMsg = error;
+                this.errorMsg = error.response.data.message;
             });
         }
     },
