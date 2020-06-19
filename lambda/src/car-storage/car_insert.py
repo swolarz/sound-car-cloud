@@ -5,6 +5,7 @@ logging.getLogger().setLevel(logging.INFO)
 
 from jsonschema import validate, ValidationError
 from elasticsearch import Elasticsearch
+from elasticsearch import NotFoundError
 
 import es_client
 from cars_schema import index_name as cars_index_name
@@ -103,7 +104,7 @@ def handler(event, context):
     # Index new car document in the Elasticsearch service
     try:
         index_result = es.index(index=cars_index_name, body=result)
-    except Exception as e:
+    except Exception:
         logging.exception('Failed to insert new car')
         return response(500, {
             'error': 'car-insert-failed',
@@ -130,6 +131,9 @@ def get_car_handler(event, context):
     car_id = event["pathParameters"]["car_id"]
     
     es = get_es_client()
-    car_doc = get_car_document(es, car_id)
+    try:
+        car_doc = get_car_document(es, car_id)
+        return response(200, car_doc)
+    except NotFoundError:
+        return response(404, 'Not found')
     
-    return response(200, car_doc)
