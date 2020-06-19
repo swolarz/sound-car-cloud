@@ -92,18 +92,15 @@ def prepare_car_doc(event_body, user_id):
         }))
 
 
-def handler(event, context):
-    es = get_es_client()
-    user_id = get_user_id(event)
-    
-    success, result = prepare_car_doc(event["body"], user_id)
+def index_car(es, car_request_data, car_id, user_id):
+    success, result = prepare_car_doc(car_request_data, user_id)
     
     if not success:
         return result
 
     # Index new car document in the Elasticsearch service
     try:
-        index_result = es.index(index=cars_index_name, body=result)
+        index_result = es.index(index=cars_index_name, body=result, id=car_id)
     except Exception:
         logging.exception('Failed to insert new car')
         return response(500, {
@@ -115,6 +112,13 @@ def handler(event, context):
     return response(200, car_doc)
 
 
+def handler(event, context):
+    es = get_es_client()
+    user_id = get_user_id(event)
+    
+    return index_car(es, event['body'], None, user_id)
+
+
 def put_car_handler(event, context):
     user_id = get_user_id(event)
     car_id = event["pathParameters"]["car_id"]
@@ -124,9 +128,9 @@ def put_car_handler(event, context):
 
     if car_doc['ownerId'] != user_id:
         return response(403, car_doc)
-    else:
-        return response(200, car_doc)
-    #TODO: edit car in DB
+
+    return index_car(es, event['body'], car_id, user_id)
+
 
 
 def get_car_handler(event, context):
