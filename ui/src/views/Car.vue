@@ -44,6 +44,9 @@ export default {
             
         }
     },
+    created: function() {
+        this.loadCar(this.$route.params.pathMatch)
+    },
     methods: {
         save(){
             this.errorMsg = null;
@@ -57,6 +60,15 @@ export default {
                     'year': parseInt(this.car.productionYear),
                 }
             }).then(response => {
+                console.log(response);
+            })
+            .catch(error => {
+                this.errorMsg = error.response.data.message;
+            });
+        },
+        loadCar(carId) {
+            API.get('carsHandler', '/' + carId)
+            .then(response => {
                 console.log(response);
             })
             .catch(error => {
