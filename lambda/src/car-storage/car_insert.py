@@ -55,6 +55,8 @@ def get_car_document(es: Elasticsearch, car_id: str):
 
 
 def handler(event, context):
+    user_id = event["requestContext"]["authorizer"]["claims"]["sub"]
+
     es_endpoint = os.getenv('ELASTICSEARCH_SERVICE_ENDPOINT')
 
     # Connect to Elasticsearch service
@@ -70,7 +72,7 @@ def handler(event, context):
     # Parse and validate new car request body
     try:
         car_request = json.loads(event['body'])
-        car_doc = prepare_car_document(car_request, context.identity.cognito_identity_id)
+        car_doc = prepare_car_document(car_request, user_id)
     except json.decoder.JSONDecodeError:
         logging.exception('Failed to decode request body json')
         return response(400, {
