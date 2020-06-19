@@ -14,7 +14,6 @@
 
 <script>
 import { Auth } from 'aws-amplify'
-import { AmplifyEventBus } from 'aws-amplify-vue';
 import ErrorDisplayer from '@/components/ErrorDisplayer.vue'
 export default {
   name: 'Login',
@@ -33,15 +32,6 @@ export default {
     },
   created(){
     this.errorMsg = null;
-    this.findUser();
-    AmplifyEventBus.$on('authState', info => {
-      if(info === "signedIn") {
-        this.findUser();
-      } else {
-        this.$store.state.signedIn = false;
-        this.$store.state.user = null;
-      }
-    });
   },
   computed: {
     signedIn(){
@@ -65,16 +55,6 @@ export default {
           this.$store.state.signedIn = !!data;
         } )
         .catch(err => this.errorMsg = err.message);
-    },
-    async findUser() {
-      try {
-        const user = await Auth.currentAuthenticatedUser();
-        this.$store.state.signedIn = true;
-        this.$store.state.user = user;
-      } catch(err) {
-        this.$store.state.signedIn = false;
-        this.$store.state.user = null;
-      }
     }
   }
 }

@@ -37,9 +37,10 @@ const router = new Router({
       meta: { forUnauthorized: true} 
     },
     {
-      path: '/cars',
+      path: '/cars/*',
       name: 'cars',
       component: Car,
+      meta: { requiresAuth: true}
     },
   ]
 })
@@ -47,20 +48,14 @@ const router = new Router({
 
 router.beforeResolve((to, from, next) => {
   if (to.matched.some(record => record.meta.requiresAuth)) {
-    let user;
     Vue.prototype.$Amplify.Auth.currentAuthenticatedUser().then((data) => {
       if (data && data.signInUserSession) {
-        user = data;
-      next()
+        next();
       } 
     }).catch((e) => {
-      console.log(e)
-    });
-    if (!user) {
+      console.log(e);
       next({path:'/'});
-    }else {
-      next()
-    }
+    });
   } else if (to.matched.some(record => record.meta.forUnauthorized)) {
     Vue.prototype.$Amplify.Auth.currentAuthenticatedUser().then((data) => {
       if (data && data.signInUserSession) {
