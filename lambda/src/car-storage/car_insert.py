@@ -121,9 +121,11 @@ def put_car_handler(event, context):
 
     es = get_es_client()
     car_doc = get_car_document(es, car_id)
-    if car_doc.ownerId != user_id:
-        return response(403, car_doc)
 
+    if car_doc['ownerId'] != user_id:
+        return response(403, car_doc)
+    else:
+        return response(200, car_doc)
     #TODO: edit car in DB
 
 

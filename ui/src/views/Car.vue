@@ -18,7 +18,7 @@
     <p>Production year</p>
     <input v-model="car.productionYear" type="number">
 
-    <button id="saveBtn" @click="save">Save</button>
+    <button id="saveBtn" @click="save">Add new</button>
 
     <ErrorDisplayer v-bind:errorMsg="errorMsg" />
   </div>
@@ -55,21 +55,43 @@ export default {
     methods: {
         save(){
             this.errorMsg = null;
-            API.post('carsHandler', '', {
-                body: {
-                    'carTitle': this.car.title,
-                    'carDescription': this.car.description,
-                    'engine': this.car.engine,
-                    'horsePower': parseInt(this.car.horsePower),
-                    'mileage': parseInt(this.car.mileage),
-                    'year': parseInt(this.car.productionYear),
-                }
-            }).then(response => {
-                console.log(response);
-            })
-            .catch(error => {
-                this.errorMsg = error.response.data.message;
-            });
+
+            if (this.$route.params.pathMatch)
+            {
+                API.put('carsHandler', '/' + this.$route.params.pathMatch, {
+                    body: {
+                        'carTitle': this.car.title,
+                        'carDescription': this.car.description,
+                        'engine': this.car.engine,
+                        'horsePower': parseInt(this.car.horsePower),
+                        'mileage': parseInt(this.car.mileage),
+                        'year': parseInt(this.car.productionYear),
+                    }
+                }).then(response => {
+                    console.log(response);
+                })
+                .catch(error => {
+                    this.errorMsg = error.response.data.message;
+                });
+            }
+            else
+            {
+                API.post('carsHandler', '', {
+                    body: {
+                        'carTitle': this.car.title,
+                        'carDescription': this.car.description,
+                        'engine': this.car.engine,
+                        'horsePower': parseInt(this.car.horsePower),
+                        'mileage': parseInt(this.car.mileage),
+                        'year': parseInt(this.car.productionYear),
+                    }
+                }).then(response => {
+                    console.log(response);
+                })
+                .catch(error => {
+                    this.errorMsg = error.response.data.message;
+                });
+            }
         },
         setUIToReadonly(){
             document.getElementById('saveBtn').remove();
@@ -78,6 +100,9 @@ export default {
             for(let i = 0; i < inputs.length; i++) {
                 inputs[i].disabled = true;
             }
+        },
+        setUIToEditMode() {
+            document.getElementById('saveBtn').textContent='Edit'
         },
         loadCar(car) {
             this.car.title = car.carTitle,
@@ -89,6 +114,9 @@ export default {
             
             if (this.$store.state.user == null || car.ownerId.localeCompare(this.$store.state.user.attributes.sub)) {
                 this.setUIToReadonly();
+            }
+            else {
+                this.setUIToEditMode();
             }
         },
         loadCarFromDB(carId) {
