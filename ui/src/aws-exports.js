@@ -36,7 +36,16 @@ const awsmobile = {
             Authorization: `Bearer ${(await Auth.currentSession()).getIdToken().getJwtToken()}`,
             "Content-Type": 'application/json' 
           }
-        }
+        },
+      },
+      {
+        name: "carsGetHandler",
+        endpoint: aws_generated_exports.carsHandlerPath,
+        custom_header: async () => { 
+          return { 
+            "Content-Type": 'application/json' 
+          }
+        },
       },
     ],
   },

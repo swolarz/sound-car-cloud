@@ -87,12 +87,12 @@ export default {
             this.car.mileage = car.mileage;
             this.car.productionYear = car.year;
             
-            if (car.ownerId.localeCompare(this.$store.state.user.attributes.sub)) {
+            if (this.$store.state.user == null || car.ownerId.localeCompare(this.$store.state.user.attributes.sub)) {
                 this.setUIToReadonly();
             }
         },
         loadCarFromDB(carId) {
-            return API.get('carsHandler', '/' + carId)
+            return API.get('carsGetHandler', '/' + carId)
             .then(response => {
                 this.loadCar(response);
             })
