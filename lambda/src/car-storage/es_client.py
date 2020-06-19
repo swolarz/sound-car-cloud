@@ -21,8 +21,6 @@ def get_elasticsearch_client(es_endpoint: str) -> Elasticsearch:
             verify_certs = True,
         )
 
-        print(es.info())
-
         return es
     except Exception as e:
         raise ConnectionError('Failed to connect to Elasticsearch cluster', e)
