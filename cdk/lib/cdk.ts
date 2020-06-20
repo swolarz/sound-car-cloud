@@ -307,7 +307,9 @@ export class SoundCarCloudStack extends cdk.Stack {
     const photoRecognizerEnvironment = {
       FromEmail: fromEmail,
       SESRegion: sesRegion,
-      AssignPhotoToCarLambdaArn: assignPhotoToCar.functionArn
+      AssignPhotoToCarLambdaArn: assignPhotoToCar.functionArn,
+      GetCarLambda: carGetLambda.functionArn,
+      UserPoolId: userPool.userPoolId
     };
 
     const photoRecognizer = new lambda.Function(this, "PhotoRecognizer", {
@@ -333,7 +335,13 @@ export class SoundCarCloudStack extends cdk.Stack {
     photoRecognizer.addToRolePolicy(
       new iam.PolicyStatement({
         actions: [ "lambda:InvokeFunction" ],
-        resources: [ assignPhotoToCar.functionArn ],
+        resources: [ assignPhotoToCar.functionArn, carGetLambda.functionArn ],
+    }));
+
+    photoRecognizer.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["cognito-idp:ListUsers"],
+        resources: ["*"]// [ userPool.userPoolArn ],
     }));
 
     // outputs for aws-exports file

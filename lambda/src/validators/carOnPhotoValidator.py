@@ -5,8 +5,11 @@ import os
 rekog = boto3.client('rekognition')
 ses = boto3.client('ses')
 lambda_client = boto3.client("lambda")
+cognito_client = boto3.client('cognito-idp')
 
+get_car_lambda_arn = os.getenv("GetCarLambda")
 assign_photo_to_car_lambda_arn = os.getenv("AssignPhotoToCarLambdaArn")
+user_pool_id = os.getenv("UserPoolId")
 
 def check_label(recog_response, label):
     for i in recog_response['Labels']:
@@ -16,8 +19,6 @@ def check_label(recog_response, label):
 
 
 def validate(event, context):
-    print('request: {}'.format(json.dumps(event)))
-
     for outer_records in event["Records"]:
         inner_records = json.loads(outer_records["body"])
         for photo_data in inner_records["Records"]:
@@ -35,10 +36,11 @@ def validate(event, context):
                 MinConfidence=90
             )
 
+            car_id = key.split('_')[0]
+
             if check_label(response, 'car') and not check_label(response, 'human'):
                 print('Valid photo')
                 
-                car_id = key.split('_')[0]
                 photo_id = key
 
                 lambda_client.invoke(
@@ -51,7 +53,32 @@ def validate(event, context):
                 )
             else:
                 print('Invalid photo')
-                send_failure_email(os.getenv("FromEmail"))
+
+                car_get_response = lambda_client.invoke(
+                    FunctionName = get_car_lambda_arn,
+                    InvocationType = "RequestResponse",
+                    Payload = json.dumps({
+                        "car_id": car_id
+                    })
+                )
+
+                response_str = car_get_response['Payload'].read()
+                response_dict = json.loads(response_str)
+                response_body_dict = json.loads(response_dict['body'])
+                car_owner_id = response_body_dict['ownerId']
+
+                filter = "sub = \"{}\"".format(car_owner_id)
+
+                users = cognito_client.list_users(
+                    UserPoolId=user_pool_id, 
+                    AttributesToGet=[
+                        'email'
+                    ],
+                    Filter = filter)
+
+                user = users['Users'][0]
+                mail = user['Attributes'][0]['Value']
+                send_failure_email(mail)
 
 
 SENDER = os.getenv("FromEmail")
