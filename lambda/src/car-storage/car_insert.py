@@ -134,7 +134,7 @@ def put_car_handler(event, context):
 
 
 def get_car_handler(event, context):
-    car_id = event["pathParameters"]["car_id"]
+    car_id = event["car_id"] if "car_id" in event else event["pathParameters"]["car_id"]
     
     es = get_es_client()
     try:

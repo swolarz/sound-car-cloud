@@ -10,6 +10,7 @@ import * as sqses from "@aws-cdk/aws-lambda-event-sources";
 import * as elasticsearch from '@aws-cdk/aws-elasticsearch';
 import * as customresource from '@aws-cdk/custom-resources';
 import * as iam from '@aws-cdk/aws-iam';
+import { Policy } from '@aws-cdk/aws-iam';
 
 
 export class SoundCarCloudStack extends cdk.Stack {
@@ -257,7 +258,8 @@ export class SoundCarCloudStack extends cdk.Stack {
     });
 
     const uploadPhotosLambdaEnvironment = {
-      Bucket: photosBucket.bucketName
+      Bucket: photosBucket.bucketName,
+      GetCarLambda: carGetLambda.functionArn 
     };
 
     const uploadPhotosLambda = new lambda.Function(this, "UploadPhotosHandler", {
@@ -266,6 +268,11 @@ export class SoundCarCloudStack extends cdk.Stack {
       handler: "photosUpload.upload",
       environment: uploadPhotosLambdaEnvironment
     });
+
+    uploadPhotosLambda.addToRolePolicy(new iam.PolicyStatement({
+      resources: [ carGetLambda.functionArn ],
+      actions: [ "lambda:InvokeFunction" ]
+    }))
 
     photosBucket.grantWrite(uploadPhotosLambda);
     

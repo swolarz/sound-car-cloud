@@ -10,6 +10,9 @@ import { API } from "aws-amplify";
 
 export default {
   name: 'PhotosUploader',
+  props: {
+    carId: String,
+  },
   data() {
       return {
           selectedFile: null
@@ -18,6 +21,7 @@ export default {
   methods: {
       onFileSelected(event) {
           this.selectedFile = event.target.files[0];
+          console.log(this.carId);
       },
       onUploadButtonClicked() {
           readBytesOfFile(this.selectedFile, this.sendFile);
@@ -25,7 +29,8 @@ export default {
       sendFile(file) {
         let params = {
             body: {
-                photo: file
+                photo: file,
+                carId: this.carId
             }
         }
 

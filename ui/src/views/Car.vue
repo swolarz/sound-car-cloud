@@ -21,11 +21,16 @@
     <button id="saveBtn" @click="save">Add new</button>
 
     <ErrorDisplayer v-bind:errorMsg="errorMsg" />
+
+    <div v-if="editMode">
+        <PhotosUpload v-bind:carId="carId" />
+    </div>
   </div>
 </template>
 
 <script>
 import ErrorDisplayer from '@/components/ErrorDisplayer.vue'
+import PhotosUpload from '@/components/PhotosUpload.vue'
 import { API } from "aws-amplify";
 
 export default {
@@ -33,6 +38,8 @@ export default {
   data() {
         return {
             errorMsg: null,
+            editMode: false,
+            carId: null,
             car: {
                 title: '',
                 description: '',
@@ -46,7 +53,8 @@ export default {
     },
     created: function() {
         if (this.$route.params.pathMatch){
-            var car = this.loadCarFromDB(this.$route.params.pathMatch)
+            this.carId = this.$route.params.pathMatch;
+            var car = this.loadCarFromDB(this.carId)
             if (car) {
                 this.loadCar(car)
             }
@@ -56,9 +64,9 @@ export default {
         save(){
             this.errorMsg = null;
 
-            if (this.$route.params.pathMatch)
+            if (this.carId)
             {
-                API.put('carsHandler', '/' + this.$route.params.pathMatch, {
+                API.put('carsHandler', '/' + this.carId, {
                     body: {
                         'carTitle': this.car.title,
                         'carDescription': this.car.description,
@@ -102,7 +110,8 @@ export default {
             }
         },
         setUIToEditMode() {
-            document.getElementById('saveBtn').textContent='Edit'
+            document.getElementById('saveBtn').textContent='Edit';
+            this.editMode = true;
         },
         loadCar(car) {
             this.car.title = car.carTitle,
@@ -130,7 +139,8 @@ export default {
         }
     },
     components: {
-        ErrorDisplayer
+        ErrorDisplayer,
+        PhotosUpload
     }
 }
 </script>
