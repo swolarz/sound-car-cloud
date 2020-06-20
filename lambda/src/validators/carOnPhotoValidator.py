@@ -4,6 +4,16 @@ import os
 
 rekog = boto3.client('rekognition')
 ses = boto3.client('ses')
+lambda_client = boto3.client("lambda")
+
+assign_photo_to_car_lambda_arn = os.getenv("AssignPhotoToCarLambdaArn")
+
+def check_label(recog_response, label):
+    for i in recog_response['Labels']:
+        if i["Name"].lower()  == label.lower() :
+            return True
+    return False
+
 
 def validate(event, context):
     print('request: {}'.format(json.dumps(event)))
@@ -13,7 +23,6 @@ def validate(event, context):
         for photo_data in inner_records["Records"]:
             bucket = photo_data["s3"]["bucket"]["name"]
             key = photo_data["s3"]["object"]["key"]
-            print(bucket, key)
 
             response = rekog.detect_labels(
                 Image={
@@ -26,9 +35,23 @@ def validate(event, context):
                 MinConfidence=90
             )
 
-            print(response)
+            if check_label(response, 'car') and not check_label(response, 'human'):
+                print('Valid photo')
+                
+                car_id = key.split('_')[0]
+                photo_id = key
 
-            send_failure_email(os.getenv("FromEmail"))
+                lambda_client.invoke(
+                    FunctionName = assign_photo_to_car_lambda_arn,
+                    InvocationType = "RequestResponse",
+                    Payload = json.dumps({
+                        "car_id": car_id,
+                        "photo_id": photo_id,
+                    })
+                )
+            else:
+                print('Invalid photo')
+                send_failure_email(os.getenv("FromEmail"))
 
 
 SENDER = os.getenv("FromEmail")

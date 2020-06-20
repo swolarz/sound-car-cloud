@@ -143,3 +143,11 @@ def get_car_handler(event, context):
     except NotFoundError:
         return response(404, 'Not found')
     
+
+def assign_photo_to_car(event, context):
+    car_id = event["car_id"]
+    photo_id = event["photo_id"]
+
+    print(car_id, photo_id)
+
+    return 'OK'

@@ -32,7 +32,7 @@ def upload(event, context):
     car_id = request_body['carId']
     imageData = request_body["photo"].split(',')[1]
     extenstion = re.split(";|/", request_body["photo"])[1]
-    photoId = str(uuid.uuid4()) + "." + extenstion
+    photoId = car_id + '_' + str(uuid.uuid4()) + "." + extenstion
 
     car_get_response = lambda_client.invoke(
         FunctionName = get_car_lambda_arn,

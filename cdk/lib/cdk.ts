@@ -149,6 +149,22 @@ export class SoundCarCloudStack extends cdk.Stack {
       })
     );
 
+    const assignPhotoToCar = new lambda.Function(this, 'AssignPhotoToCar', {
+      runtime: lambda.Runtime.PYTHON_3_7,
+      code: carStorageCodeAsset,
+      handler: 'car_insert.assign_photo_to_car',
+      environment: {
+        ELASTICSEARCH_SERVICE_ENDPOINT: elasticsearchDomain.attrDomainEndpoint,
+      }
+    });
+    carGetLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: [ "es:*" ],
+        resources: [ elasticsearchDomain.attrArn + '*' ]
+      })
+    );
+
+
     // Lambda functions
     const lambdaCodeAsset = lambda.Code.fromAsset('../lambda/src');
     const helloLambda = new lambda.Function(this, "HelloHandler", {
@@ -291,6 +307,7 @@ export class SoundCarCloudStack extends cdk.Stack {
     const photoRecognizerEnvironment = {
       FromEmail: fromEmail,
       SESRegion: sesRegion,
+      AssignPhotoToCarLambdaArn: assignPhotoToCar.functionArn
     };
 
     const photoRecognizer = new lambda.Function(this, "PhotoRecognizer", {
@@ -311,6 +328,12 @@ export class SoundCarCloudStack extends cdk.Stack {
       new iam.PolicyStatement({
         actions: ["ses:SendEmail"],
         resources: ["*"],
+    }));
+
+    photoRecognizer.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: [ "lambda:InvokeFunction" ],
+        resources: [ assignPhotoToCar.functionArn ],
     }));
 
     // outputs for aws-exports file
