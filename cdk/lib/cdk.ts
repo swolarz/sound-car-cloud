@@ -341,7 +341,7 @@ export class SoundCarCloudStack extends cdk.Stack {
     photoRecognizer.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ["cognito-idp:ListUsers"],
-        resources: ["*"]// [ userPool.userPoolArn ],
+        resources: [ userPool.userPoolArn ],
     }));
 
     // outputs for aws-exports file
