@@ -18,7 +18,7 @@
     <p>Production year</p>
     <input v-model="car.productionYear" type="number">
 
-    <button id="saveBtn" @click="save">Add new</button>
+    <button id="saveBtn" @click="save">{{this.buttonText}}</button>
 
     <ErrorDisplayer v-bind:errorMsg="errorMsg" />
 
@@ -37,6 +37,7 @@ export default {
   name: 'car',
   data() {
         return {
+            buttonText: "Add new",
             errorMsg: null,
             editMode: false,
             carId: null,
@@ -52,15 +53,38 @@ export default {
         }
     },
     created: function() {
-        if (this.$route.params.pathMatch){
-            this.carId = this.$route.params.pathMatch;
-            var car = this.loadCarFromDB(this.carId)
-            if (car) {
-                this.loadCar(car)
-            }
+        this.loadCarFromLinkIfNeeded();
+    },
+    watch: {
+        '$route.params.pathMatch': function () {
+            this.loadCarFromLinkIfNeeded();
         }
     },
     methods: {
+        clearData() {
+            this.buttonText = "Add new";
+            this.errorMsg = null;
+            this.editMode = false;
+            this.carId = null;
+            this.car = {
+                title: '',
+                description: '',
+                engine: '',
+                horsePower: '',
+                mileage: '',
+                productionYear: ''
+            }
+        },
+        loadCarFromLinkIfNeeded() {
+            this.clearData();
+            if (this.$route.params.pathMatch){
+                this.carId = this.$route.params.pathMatch;
+                var car = this.loadCarFromDB(this.carId)
+                if (car) {
+                    this.loadCar(car)
+                }
+            }
+        },
         save(){
             this.errorMsg = null;
 
@@ -95,6 +119,7 @@ export default {
                     }
                 }).then(response => {
                     console.log(response);
+                    this.$router.push(this.$route.path + response.id)
                 })
                 .catch(error => {
                     this.errorMsg = error.response.data.message;
@@ -110,8 +135,8 @@ export default {
             }
         },
         setUIToEditMode() {
-            document.getElementById('saveBtn').textContent='Edit';
             this.editMode = true;
+            this.buttonText = "Edit"
         },
         loadCar(car) {
             this.car.title = car.carTitle,
