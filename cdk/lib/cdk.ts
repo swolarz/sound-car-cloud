@@ -269,7 +269,7 @@ export class SoundCarCloudStack extends cdk.Stack {
     });
 
     const photosBucket = new s3.Bucket(this, 'SoundCarCloudUIBucketPhotos', {
-      publicReadAccess: false,
+      publicReadAccess: true,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
