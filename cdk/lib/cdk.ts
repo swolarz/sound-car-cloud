@@ -242,7 +242,20 @@ export class SoundCarCloudStack extends cdk.Stack {
             originAccessIdentity: cloudFrontOia
           },
           behaviors: [{isDefaultBehavior: true}]
-        }
+        },
+      ],
+      defaultRootObject: 'index.html',
+      errorConfigurations: [
+        {
+          errorCode: 403,
+          responseCode: 200,
+          responsePagePath: '/index.html'
+        },
+        {
+          errorCode: 404,
+          responseCode: 200,
+          responsePagePath: '/index.html'
+        },
       ]
     });
     
