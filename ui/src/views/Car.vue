@@ -22,7 +22,7 @@
 
     <ErrorDisplayer v-bind:errorMsg="errorMsg" />
 
-    <div v-if="car.photoUrl">
+    <div v-if="car.photoUrl != ''">
         <img v-bind:src="car.photoUrl" /> 
     </div>
 
