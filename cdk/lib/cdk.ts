@@ -157,7 +157,7 @@ export class SoundCarCloudStack extends cdk.Stack {
         ELASTICSEARCH_SERVICE_ENDPOINT: elasticsearchDomain.attrDomainEndpoint,
       }
     });
-    carGetLambda.addToRolePolicy(
+    assignPhotoToCar.addToRolePolicy(
       new iam.PolicyStatement({
         actions: [ "es:*" ],
         resources: [ elasticsearchDomain.attrArn + '*' ]
@@ -388,6 +388,11 @@ export class SoundCarCloudStack extends cdk.Stack {
     new cdk.CfnOutput(this, "CarsHandlerPath", {
       description: "CarsHandlerPath",
       value: api.url + carsHandlerPath
+    });
+
+    new cdk.CfnOutput(this, "PhotoBucketUrl", {
+      description: "PhotoBucketUrl",
+      value: photosBucket.bucketWebsiteUrl
     });
   }
 }

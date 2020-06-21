@@ -19,6 +19,9 @@ def check_label(recog_response, label):
 
 
 def validate(event, context):
+    if 'Records' not in event:
+        return
+
     for outer_records in event["Records"]:
         inner_records = json.loads(outer_records["body"])
         for photo_data in inner_records["Records"]:
@@ -36,7 +39,7 @@ def validate(event, context):
                 MinConfidence=90
             )
 
-            car_id = key.split('_')[0]
+            car_id = key.split('.')[0]
 
             if check_label(response, 'car') and not check_label(response, 'human'):
                 print('Valid photo')

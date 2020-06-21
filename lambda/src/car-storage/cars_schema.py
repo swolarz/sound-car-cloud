@@ -13,22 +13,8 @@ schema = {
             'engineSoundFile': {
                 'type': 'keyword'
             },
-            'carPhotos': {
-                'properties': {
-                    'main': {
-                        'type': 'keyword'
-                    },
-                    'all': {
-                        'properties': {
-                            'full': {
-                                'type': 'keyword',
-                            },
-                            'thumbnail': {
-                                'type': 'keyword'
-                            }
-                        }
-                    }
-                }
+            'photoId': {
+                'type': 'keyword'
             },
             'carTitle': {
                 'type': 'text'

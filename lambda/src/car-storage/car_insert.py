@@ -23,7 +23,7 @@ def response(status_code: int, response: object):
     }
 
 
-def prepare_car_document(car_request: object, user_id: str):
+def prepare_car_document(car_request: object, user_id: str, photo_id: str):
     validate(car_request, {
         'type': 'object',
         'properties': {
@@ -43,7 +43,8 @@ def prepare_car_document(car_request: object, user_id: str):
         'horsePower': car_request['horsePower'],
         'mileage': car_request['mileage'],
         'year': str(car_request['year']),
-        'ownerId': user_id
+        'ownerId': user_id,
+        'photoId': photo_id
     }
 
 
@@ -73,11 +74,11 @@ def get_user_id(event):
     return event["requestContext"]["authorizer"]["claims"]["sub"]
 
 
-def prepare_car_doc(event_body, user_id):
+def prepare_car_doc(event_body, user_id, photo_id):
     # Parse and validate new car request body
     try:
         car_request = json.loads(event_body)
-        return (True, prepare_car_document(car_request, user_id))
+        return (True, prepare_car_document(car_request, user_id, photo_id))
     except json.decoder.JSONDecodeError:
         logging.exception('Failed to decode request body json')
         return (False, response(400, {
@@ -92,8 +93,8 @@ def prepare_car_doc(event_body, user_id):
         }))
 
 
-def index_car(es, car_request_data, car_id, user_id):
-    success, result = prepare_car_doc(car_request_data, user_id)
+def index_car(es, car_request_data, car_id, user_id, photo_id):
+    success, result = prepare_car_doc(car_request_data, user_id, photo_id)
     
     if not success:
         return result
@@ -116,7 +117,7 @@ def handler(event, context):
     es = get_es_client()
     user_id = get_user_id(event)
     
-    return index_car(es, event['body'], None, user_id)
+    return index_car(es, event['body'], None, user_id, None)
 
 
 def put_car_handler(event, context):
@@ -129,8 +130,7 @@ def put_car_handler(event, context):
     if car_doc['ownerId'] != user_id:
         return response(403, car_doc)
 
-    return index_car(es, event['body'], car_id, user_id)
-
+    return index_car(es, event['body'], car_id, user_id, car_doc['photoId'])
 
 
 def get_car_handler(event, context):
@@ -148,6 +148,11 @@ def assign_photo_to_car(event, context):
     car_id = event["car_id"]
     photo_id = event["photo_id"]
 
-    print(car_id, photo_id)
+    es = get_es_client()
+    car_doc = get_car_document(es, car_id)
+    car_doc['photoId'] = photo_id
 
-    return 'OK'
+    try:
+        es.index(index=cars_index_name, body=car_doc, id=car_id)
+    except Exception:
+        logging.exception('Failed to insert new car')
