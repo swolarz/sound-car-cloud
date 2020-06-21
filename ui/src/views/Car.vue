@@ -22,6 +22,10 @@
 
     <ErrorDisplayer v-bind:errorMsg="errorMsg" />
 
+    <div v-if="car.photoUrl">
+        <img v-bind:src="car.photoUrl" /> 
+    </div>
+
     <div v-if="editMode">
         <PhotosUpload v-bind:carId="carId" />
     </div>
@@ -32,6 +36,7 @@
 import ErrorDisplayer from '@/components/ErrorDisplayer.vue'
 import PhotosUpload from '@/components/PhotosUpload.vue'
 import { API } from "aws-amplify";
+import aws_generated_exports from '@/autoGenConfig';
 
 export default {
   name: 'car',
@@ -47,7 +52,8 @@ export default {
                 engine: '',
                 horsePower: '',
                 mileage: '',
-                productionYear: ''
+                productionYear: '',
+                photoUrl: ''
             },
             
         }
@@ -72,7 +78,8 @@ export default {
                 engine: '',
                 horsePower: '',
                 mileage: '',
-                productionYear: ''
+                productionYear: '',
+                photoId: ''
             }
         },
         loadCarFromLinkIfNeeded() {
@@ -139,12 +146,15 @@ export default {
             this.buttonText = "Edit"
         },
         loadCar(car) {
+            console.log(aws_generated_exports.photoBucketUrl +  car.photoId)
+
             this.car.title = car.carTitle,
             this.car.description = car.carDescription;
             this.car.engine = car.engine;
             this.car.horsePower = car.horsePower;
             this.car.mileage = car.mileage;
             this.car.productionYear = car.year;
+            this.car.photoUrl = aws_generated_exports.photoBucketUrl + car.photoId;
             
             if (this.$store.state.user == null || car.ownerId.localeCompare(this.$store.state.user.attributes.sub)) {
                 this.setUIToReadonly();

@@ -392,7 +392,7 @@ export class SoundCarCloudStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, "PhotoBucketUrl", {
       description: "PhotoBucketUrl",
-      value: photosBucket.bucketWebsiteUrl
+      value: `https://${photosBucket.bucketName}.s3.amazonaws.com/` 
     });
   }
 }
