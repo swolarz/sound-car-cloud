@@ -1,7 +1,10 @@
 import json
+import logging
+logging.getLogger().setLevel(logging.DEBUG)
+
 
 def handler(event, context):
-    print('request: {}'.format(json.dumps(event)))
+    logging.debug('request: {}'.format(json.dumps(event)))
     return {
         'statusCode': 200,
         'headers': {

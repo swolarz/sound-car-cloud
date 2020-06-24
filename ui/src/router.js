@@ -4,6 +4,7 @@ import Home from './views/Home.vue'
 import Secret from './views/Secret.vue'
 import SignUp from './components/SignUp.vue'
 import Upload from './views/Upload.vue'
+import Car from './views/Car.vue'
 
 
 Vue.use(Router)
@@ -35,26 +36,25 @@ const router = new Router({
       component: SignUp,
       meta: { forUnauthorized: true} 
     },
+    {
+      path: '/cars/*',
+      name: 'cars',
+      component: Car
+    },
   ]
 })
 
 
 router.beforeResolve((to, from, next) => {
   if (to.matched.some(record => record.meta.requiresAuth)) {
-    let user;
     Vue.prototype.$Amplify.Auth.currentAuthenticatedUser().then((data) => {
       if (data && data.signInUserSession) {
-        user = data;
-      next()
+        next();
       } 
     }).catch((e) => {
-      console.log(e)
-    });
-    if (!user) {
+      console.log(e);
       next({path:'/'});
-    }else {
-      next()
-    }
+    });
   } else if (to.matched.some(record => record.meta.forUnauthorized)) {
     Vue.prototype.$Amplify.Auth.currentAuthenticatedUser().then((data) => {
       if (data && data.signInUserSession) {

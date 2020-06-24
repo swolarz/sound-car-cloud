@@ -4,11 +4,11 @@ import logging
 from elasticsearch import Elasticsearch
 
 import es_client
-from cars_schema import schema as cars_schema
+from cars_schema import schema as cars_schema, index_name as cars_index_name
 
 
 def init_cars_index(es: Elasticsearch):
-    index_name = 'scc-cars'
+    index_name = cars_index_name
     index_exists = es.indices.exists(index_name)
 
     if not index_exists:
@@ -17,8 +17,6 @@ def init_cars_index(es: Elasticsearch):
 
 def handler(event, context):
     es_endpoint = os.getenv('ELASTICSEARCH_SERVICE_ENDPOINT')
-
-    logging.info('Connecting to Elasticsearch service at: {}'.format(es_endpoint))
 
     try:
         es: Elasticsearch = es_client.get_elasticsearch_client(es_endpoint)
@@ -33,7 +31,7 @@ def handler(event, context):
             },
             'body': json.dumps({
                 'error': 'elasticsearch-client-connection',
-                'message': 'Elasticsearch service client connection error with endpoint = {}'.format(es_endpoint)
+                'message': 'Elasticsearch service is not available'
             })
         }
 

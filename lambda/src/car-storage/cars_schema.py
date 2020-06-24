@@ -1,3 +1,5 @@
+index_name = 'scc-cars'
+
 schema = {
     'settings': {
         'number_of_shards': 1,
@@ -11,27 +13,16 @@ schema = {
             'engineSoundFile': {
                 'type': 'keyword'
             },
-            'carPhotos': {
-                'properties': {
-                    'main': {
-                        'type': 'keyword'
-                    },
-                    'all': {
-                        'properties': {
-                            'full': {
-                                'type': 'keyword',
-                            },
-                            'thumbnail': {
-                                'type': 'keyword'
-                            }
-                        }
-                    }
-                }
+            'photoId': {
+                'type': 'keyword'
+            },
+            'carTitle': {
+                'type': 'text'
             },
             'carDescription': {
                 'type': 'text'
             },
-            'horsepower': {
+            'horsePower': {
                 'type': 'integer'
             },
             'mileage': {
