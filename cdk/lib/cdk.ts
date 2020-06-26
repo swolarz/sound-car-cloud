@@ -10,7 +10,6 @@ import * as sqses from "@aws-cdk/aws-lambda-event-sources";
 import * as elasticsearch from '@aws-cdk/aws-elasticsearch';
 import * as customresource from '@aws-cdk/custom-resources';
 import * as iam from '@aws-cdk/aws-iam';
-import { Policy } from '@aws-cdk/aws-iam';
 
 
 export class SoundCarCloudStack extends cdk.Stack {
@@ -79,7 +78,7 @@ export class SoundCarCloudStack extends cdk.Stack {
       })
     );
 
-    new customresource.AwsCustomResource(this, 'initCarStorageEsIndexResource_v1', {
+    new customresource.AwsCustomResource(this, 'initCarStorageEsIndexResource_v2', {
       onCreate: {
         service: 'Lambda',
         action: 'invoke',
@@ -98,11 +97,29 @@ export class SoundCarCloudStack extends cdk.Stack {
       }
     });
 
+    // Cars search lambda
+    const carSearchLambda = new lambda.Function(this, 'CarStorageSearchHandler', {
+      runtime: lambda.Runtime.PYTHON_3_7,
+      code: carStorageCodeAsset,
+      handler: 'car_query.handler',
+      environment: {
+        ELASTICSEARCH_SERVICE_ENDPOINT: elasticsearchDomain.attrDomainEndpoint,
+        USER_POOL_ID: userPool.userPoolId,
+        AUTHORIZATION_HEADER_NAME: authorizationHeaderName
+      }
+    });
+    carSearchLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: [ 'es:*' ],
+        resources: [ elasticsearchDomain.attrArn + '*' ]
+      })
+    );
+
     // Cars CRUD lambdas
     const carInsertLambda = new lambda.Function(this, 'CarStorageInsertHandler', {
       runtime: lambda.Runtime.PYTHON_3_7,
       code: carStorageCodeAsset,
-      handler: 'car_insert.handler',
+      handler: 'car_command.post_car_handler',
       environment: {
         ELASTICSEARCH_SERVICE_ENDPOINT: elasticsearchDomain.attrDomainEndpoint,
         USER_POOL_ID: userPool.userPoolId,
@@ -120,7 +137,7 @@ export class SoundCarCloudStack extends cdk.Stack {
     const carEditLambda = new lambda.Function(this, 'CarStorageEditHandler', {
       runtime: lambda.Runtime.PYTHON_3_7,
       code: carStorageCodeAsset,
-      handler: 'car_insert.put_car_handler',
+      handler: 'car_command.put_car_handler',
       environment: {
         ELASTICSEARCH_SERVICE_ENDPOINT: elasticsearchDomain.attrDomainEndpoint,
         USER_POOL_ID: userPool.userPoolId,
@@ -137,7 +154,7 @@ export class SoundCarCloudStack extends cdk.Stack {
     const carGetLambda = new lambda.Function(this, 'CarStorageGetHandler', {
       runtime: lambda.Runtime.PYTHON_3_7,
       code: carStorageCodeAsset,
-      handler: 'car_insert.get_car_handler',
+      handler: 'car_command.get_car_handler',
       environment: {
         ELASTICSEARCH_SERVICE_ENDPOINT: elasticsearchDomain.attrDomainEndpoint,
       }
@@ -152,7 +169,7 @@ export class SoundCarCloudStack extends cdk.Stack {
     const assignPhotoToCar = new lambda.Function(this, 'AssignPhotoToCar', {
       runtime: lambda.Runtime.PYTHON_3_7,
       code: carStorageCodeAsset,
-      handler: 'car_insert.assign_photo_to_car',
+      handler: 'car_command.assign_photo_to_car',
       environment: {
         ELASTICSEARCH_SERVICE_ENDPOINT: elasticsearchDomain.attrDomainEndpoint,
       }
@@ -211,6 +228,7 @@ export class SoundCarCloudStack extends cdk.Stack {
 
     // Lambda Rest Api
     const helloLambdaIntegration = new apigateway.LambdaIntegration(helloLambda,);
+    const carSearchLambdaIntegration = new apigateway.LambdaIntegration(carSearchLambda);
     const carInsertLambdaIntegration = new apigateway.LambdaIntegration(carInsertLambda);
     const carEditLambdaIntegration = new apigateway.LambdaIntegration(carEditLambda);
     const carGetLambdaIntegration = new apigateway.LambdaIntegration(carGetLambda);
@@ -219,6 +237,7 @@ export class SoundCarCloudStack extends cdk.Stack {
     const carsHandlerPath = "cars";
     
     const carsHandler = api.root.addResource(carsHandlerPath);
+    carsHandler.addMethod('GET', carSearchLambdaIntegration, globalCognitoSecuredMethodOptions);
     carsHandler.addMethod('POST', carInsertLambdaIntegration, globalCognitoSecuredMethodOptions);
     
     const carHandler = carsHandler.addResource('{car_id}')
