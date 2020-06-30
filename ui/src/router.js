@@ -5,6 +5,7 @@ import Secret from './views/Secret.vue'
 import SignUp from './components/SignUp.vue'
 import Upload from './views/Upload.vue'
 import Car from './views/Car.vue'
+import CarsSearch from "./components/cars/CarsSearch.vue";
 
 
 Vue.use(Router)
@@ -41,6 +42,11 @@ const router = new Router({
       name: 'cars',
       component: Car
     },
+    {
+      path: '/search',
+      name: 'search',
+      component: CarsSearch
+    }
   ]
 })
 
@@ -68,7 +74,6 @@ router.beforeResolve((to, from, next) => {
   next()
   }
 })
-
 
 
 export default router;

@@ -36,7 +36,8 @@
 import ErrorDisplayer from '@/components/ErrorDisplayer.vue'
 import PhotosUpload from '@/components/PhotosUpload.vue'
 import { API } from "aws-amplify";
-import aws_generated_exports from '@/autoGenConfig';
+import aws_exports from '@/autoGenConfig';
+import * as url from 'url';
 
 export default {
   name: 'car',
@@ -95,9 +96,8 @@ export default {
         save(){
             this.errorMsg = null;
 
-            if (this.carId)
-            {
-                API.put('carsHandler', '/' + this.carId, {
+            if (this.carId) {
+                API.put('carUpload', '/' + this.carId, {
                     body: {
                         'carTitle': this.car.title,
                         'carDescription': this.car.description,
@@ -113,9 +113,8 @@ export default {
                     this.errorMsg = error.response.data.message;
                 });
             }
-            else
-            {
-                API.post('carsHandler', '', {
+            else {
+                API.post('carUpload', '', {
                     body: {
                         'carTitle': this.car.title,
                         'carDescription': this.car.description,
@@ -146,7 +145,7 @@ export default {
             this.buttonText = "Edit"
         },
         loadCar(car) {
-            console.log(aws_generated_exports.photoBucketUrl +  car.photoId)
+            console.log(url.resolve(aws_exports.photoBucketUrl, car.photoId))
 
             this.car.title = car.carTitle,
             this.car.description = car.carDescription;
@@ -154,7 +153,7 @@ export default {
             this.car.horsePower = car.horsePower;
             this.car.mileage = car.mileage;
             this.car.productionYear = car.year;
-            this.car.photoUrl = aws_generated_exports.photoBucketUrl + car.photoId;
+            this.car.photoUrl = url.resolve(aws_exports.photoBucketUrl, car.photoId);
             
             if (this.$store.state.user == null || car.ownerId.localeCompare(this.$store.state.user.attributes.sub)) {
                 this.setUIToReadonly();
@@ -164,13 +163,13 @@ export default {
             }
         },
         loadCarFromDB(carId) {
-            return API.get('carsGetHandler', '/' + carId)
-            .then(response => {
-                this.loadCar(response);
-            })
-            .catch(error => {
-                this.errorMsg = error.response.data.message;
-            });
+            return API.get('carFetch', '/' + carId)
+                .then(response => {
+                    this.loadCar(response);
+                })
+                .catch(error => {
+                    this.errorMsg = error.response.data.message;
+                });
         }
     },
     components: {

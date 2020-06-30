@@ -34,7 +34,7 @@ export default {
             }
         }
 
-        API.post("uploadPhotos", "", params)
+        API.post("carPhotosUpload", "", params)
         .then(response => {
             console.log(response);
         })
