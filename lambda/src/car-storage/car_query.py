@@ -3,6 +3,8 @@ import json
 import logging
 logging.getLogger().setLevel(logging.INFO)
 
+import urllib.parse
+
 from jsonschema import validate, ValidationError
 from elasticsearch import Elasticsearch
 from elasticsearch_dsl import Search
@@ -23,14 +25,10 @@ def response(status_code: int, response: object):
     }
 
 
-def get_user_id(event): 
-    return event["requestContext"]["authorizer"]["claims"]["sub"]
-
-
 def parse_filters(event):
     logging.info(json.dumps(event))
 
-    params = event['requestParams']
+    params = event['queryStringParameters']
     filters = {}
 
     if 'q' in params:
@@ -75,14 +73,23 @@ def parse_filters(event):
 
 
 def parse_page(event):
-    params = event['requestParams']
+    params = event['queryStringParameters']
 
     page_no = int(params['page']) if 'page' in params else 0
     per_page = int(params['perPage']) if 'perPage' in params else 10
+
+    if page_no < 0:
+        raise ValueError('Page number must not be negative')
+
+    if per_page < 1:
+        raise ValueError('Page must contain at least one element')
+
+    if per_page > 100:
+        raise ValueError('Too many records requested')
     
     return {
-        'page': page_no,
-        'perPage': per_page
+        'page_no': page_no,
+        'per_page': per_page
     }
 
 
@@ -94,7 +101,7 @@ def make_filter_range(range_filter):
     return {ops[side]: val for side, val in range_filter.items()}
 
 
-def to_car_result_info(car_hit):
+def to_car_result_info(car_hit, photos_base_url):
     return  {
         'id': car_hit.meta.id,
         'owner': {
@@ -103,7 +110,7 @@ def to_car_result_info(car_hit):
         },
         'carTitle': car_hit.carTitle,
         'carIntro': car_hit.carIntroDescription,
-        'photoUrl': car_hit.photoId,
+        'photoUrl': urllib.parse.urljoin(photos_base_url, car_hit.photoId),
         # 'engineSoundUrl': car_hit.engineSoundFile,
         'engine': car_hit.engine,
         'horsePower': car_hit.horsePower,
@@ -112,7 +119,7 @@ def to_car_result_info(car_hit):
     }
 
 
-def find_cars(es: Elasticsearch, filters: dict, page: dict) -> dict:
+def find_cars(es: Elasticsearch, filters: dict, page: dict, photos_url: str) -> dict:
     search = Search(using=es).index(cars_index_name)
 
     # Pagination
@@ -123,7 +130,7 @@ def find_cars(es: Elasticsearch, filters: dict, page: dict) -> dict:
     search = search[first:first + per_page]
 
     # Fields projection
-    search = search.sources([
+    search = search.source([
         'carTitle', 'carIntroDescription',
         'photoId', 'engineSoundFile',
         'ownerId', 'ownerName',
@@ -148,9 +155,7 @@ def find_cars(es: Elasticsearch, filters: dict, page: dict) -> dict:
 
     # Results extraction
     response = search.execute()
-    results = list(map(to_car_result_info, response))
-
-    logging.info('Retrieved given data during car search operation: {}'.format(json.dumps(response, indent=2)))
+    results = list(map(lambda hit: to_car_result_info(hit, photos_url), response))
 
     return {
         'total': response.hits.total.value,
@@ -162,6 +167,7 @@ def find_cars(es: Elasticsearch, filters: dict, page: dict) -> dict:
 
 def handler(event, context):
     es_endpoint = os.getenv('ELASTICSEARCH_SERVICE_ENDPOINT')
+    photo_bucket_url = os.getenv('CAR_PHOTOS_BUCKET_URL')
 
     # Connect to Elasticsearch service
     try:
@@ -183,8 +189,8 @@ def handler(event, context):
         })
 
     try:
-        car_results_data = find_cars(es, filters, page)
-    except Exception:
+        car_results_data = find_cars(es, filters, page, photo_bucket_url)
+    except:
         logging.exception('Failed to fetch find cars by received filters')
         return response(500, {
             'error': 'car-search-error',
