@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="cars-list">
     <div v-if="cars && cars.length">
       <ul>
         <li v-bind:key="car.id" v-for="car in cars">
@@ -7,8 +7,8 @@
         </li>
       </ul>
     </div>
-    <div v-if="!(cars && cars.length)">
-      <h2>Unfortunately, no results found...</h2>
+    <div v-if="!(cars && cars.length)" class="no-cars">
+      <h3>Unfortunately, no results found...</h3>
     </div>
   </div>
 </template>
@@ -27,9 +27,15 @@ export default {
 }
 </script>
 
-<style scoped>
-ul {
-  list-style-type: none;
-  padding: 0;
+<style scoped lang="scss">
+.cars-list {
+  ul {
+    list-style-type: none;
+    padding: 0;
+  }
+
+  .no-cars {
+    padding: 3em;
+  }
 }
 </style>

@@ -5,9 +5,6 @@
       <input v-model="password" type="password" name="" placeholder="Password" ><br>
       <button @click="signIn">Sign in</button>
     </div>
-    <div v-if="signedIn">
-      <button @click="signOut">Sign Out</button>
-    </div>
     <ErrorDisplayer v-bind:errorMsg="errorMsg" />
   </div>
 </template>
@@ -45,14 +42,7 @@ export default {
         .then(user =>{
             this.$store.state.signedIn = !!user;
             this.$store.state.user = user;
-        } )
-        .catch(err => this.errorMsg = err.message);
-    },
-    signOut() {
-      this.errorMsg = null;
-      Auth.signOut()
-        .then(data =>{
-          this.$store.state.signedIn = !!data;
+            this.$router.push('/');
         } )
         .catch(err => this.errorMsg = err.message);
     }

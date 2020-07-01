@@ -36,13 +36,13 @@ jobs:
       - name: Setup CDK and deploy project
         working-directory: ./cdk
         run: |
+          export STACK_NAME=SoundCarStackProd-$(echo "${GITHUB_REF#refs/heads/}" | sed -r "s/[^-a-zA-Z0-9]+/-/g")
           npm install
           npm run cdk bootstrap
           npm run cdk synth
           npm run cdk deploy -- --require-approval=never
           npm run generate-config -- "${STACK_NAME}" "${STACK_REGION}" ../ui/src/autoGenConfig.js
         env:
-          STACK_NAME: SoundCarStackProd
           STACK_REGION: ${{ env.AWS_REGION }}
           VERIFIED_MAIL: registration@carcloud.com
           VERIFIED_MAIL_REGION: ${{ env.AWS_REGION }}
