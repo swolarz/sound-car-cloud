@@ -1,9 +1,9 @@
 <template>
   <div id="range-filter">
     <label>{{ label }}:</label>
-    <input ref="valueFrom" :value="value.from" @input="updateRange" placeholder="from" />
+    <b-form-input class="range-input" v-model="valueFrom" @input="updateRange" placeholder="from" />
     <span> - </span>
-    <input ref="valueTo" :value="value.to" @input="updateRange" placeholder="to" />
+    <b-form-input class="range-input" v-model="valueTo" @input="updateRange" placeholder="to" />
   </div>
 </template>
 
@@ -14,11 +14,17 @@ export default {
     label: String,
     value: Object
   },
+  data: function() {
+    return {
+      valueFrom: this.value.from,
+      valueTo: this.value.to
+    };
+  },
   methods: {
     updateRange: async function() {
       this.$emit('input', {
-        from: this.$refs.valueFrom.value,
-        to: this.$refs.valueTo.value
+        from: this.valueFrom,
+        to: this.valueTo
       });
     },
   }
@@ -31,14 +37,18 @@ export default {
   justify-content: center;
   align-items: center;
 
+  padding: 1em;
+
   label {
     font-weight: bold;
     margin-right: 1em;
   }
 
-  input {
+  .range-input {
     text-align: center;
-    width: 100px;
+    width: 150px;
+    margin-right: 1em;
+    margin-left: 1em;
   }
 }
 </style>

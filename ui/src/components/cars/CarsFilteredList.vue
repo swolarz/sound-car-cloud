@@ -5,7 +5,8 @@
     </div>
     <div id="cars-filter">
       <div id="search-bar">
-        <input v-model="searchPhrase" placeholder="Search phrase" />
+        <b-form-input v-model="searchPhrase" placeholder="Search phrase" />
+        <b-icon-search class="h2" />
       </div>
       <div id="attribute-filters">
         <div id="horse-power-filter">
@@ -23,12 +24,19 @@
         </div> -->
       </div>
       <div id="search-button">
-        <router-link :to="searchUrl" v-on:click="loadCars()" tag="button">Search</router-link>
+        <router-link :to="searchUrl" tag="button">Search</router-link>
       </div>
     </div>
     <div id="cars-pager">
+      <div class="cars-count">
+        <label>Total results:</label>
+        <span>{{ totalCars }}</span>
+      </div>
+      <div>
+        <b-pagination v-model="page" :totalRows="totalCars" :per-page="perPage"></b-pagination>
+      </div>
     </div>
-    <div id="cars-list">
+    <div id="cars-list-container">
       <CarsList v-bind:cars="cars" />
     </div>
   </div>
@@ -66,7 +74,7 @@ export default {
       },
       // onlyUserCars: false,
       totalCars: 0,
-      page: 0,
+      page: 1,
       perPage: 10,
       searchStatus: {
         status: '',
@@ -76,17 +84,26 @@ export default {
   },
   computed: {
     searchUrl: function() {
-      let target = `/search?page=${this.page}&perPage=${this.perPage}`;
+      let params = {
+        page: this.page,
+        perPage: this.perPage
+      };
 
-      if (this.searchPhrase) target += `&q=${this.searchPhrase}`;
-      if (this.horsePower.from) target += `&hpl=${this.horsePower.from}`;
-      if (this.horsePower.to) target += `&hpu=${this.horsePower.to}`;
-      if (this.mileage.from) target += `&ml=${this.mileage.from}`;
-      if (this.mileage.to) target += `&mu=${this.mileage.to}`;
-      if (this.carYear.from) target += `&cyl=${this.carYear.from}`;
-      if (this.carYear.to) target += `&cyu=${this.carYear.to}`;
+      if (this.searchPhrase) params.q = this.searchPhrase;
+      if (this.horsePower.from) params.hpl = this.horsePower.from;
+      if (this.horsePower.to) params.hpu = this.horsePower.to;
+      if (this.mileage.from) params.ml = this.mileage.from;
+      if (this.mileage.to) params.mu = this.mileage.to;
+      if (this.carYear.from) params.cyl = this.carYear.from;
+      if (this.carYear.to) params.cyu = this.carYear.to;
 
-      return target;
+      return {
+        path: '/home',
+        query: params
+      };
+    },
+    pagesTotal: function() {
+      return Math.ceil(this.page / this.perPage);
     }
   },
   created: function() {
@@ -115,7 +132,7 @@ export default {
       if (this.carYear.from) params.yearFrom = parseInt(this.carYear.from);
       if (this.carYear.to) params.yearTo = parseInt(this.carYear.to);
 
-      params.page = this.page;
+      params.page = this.page - 1;
       params.perPage = this.perPage;
 
       this.cars = SuperCars.mocks;
@@ -123,11 +140,10 @@ export default {
       API.get('carFetch', '', { queryStringParameters: params })
         .then(response => {
           this.totalCars = response.total;
-          if (response.results,length) {
-            this.cars = response.results.length;
+          if (response.results.length) {
+            this.cars = response.results;
           }
           console.log('Search results: ', response);
-          this.setStatus('success', 'Twoje Samochodziki!');
         })
         .catch(error => {
           console.log('Error: ', error);
@@ -135,8 +151,8 @@ export default {
         });
     },
     loadFilterParams: function() {
-      this.page = this.$route.query.page || 0;
-      this.perPage = this.$route.query.perPage || 10;
+      this.page = parseInt(this.$route.query.page, 10) || 1;
+      this.perPage = parseInt(this.$route.query.perPage, 10) || 10;
       this.searchPhrase = this.$route.query.q || '';
       this.horsePower = {
         from: this.$route.query.hpl || '',
@@ -211,8 +227,9 @@ export default {
   flex-direction: column;
   align-items: center;
 
+
   #cars-status-message {
-    width: 50%;
+    min-width: 100%;
   }
 
   #cars-filter {
@@ -220,13 +237,21 @@ export default {
     flex-direction: column;
     align-items: stretch;
 
-    width: 50%;
+    margin-top: 1em;
+    padding: 1em;
+    min-width: 50%;
 
+    border-top-style: solid;
     border-bottom-style: solid;
+    border-color: darkblue;
 
     #search-bar {
+      display: flex;
+      align-items: center;
+
       input {
-        width: 75%;
+        min-width: 50%;
+        margin-right: 0.5em;
       }
     }
     #search-button {
@@ -245,8 +270,23 @@ export default {
     }
   }
 
-  #cars-list {
-    width: 50%;
+  #cars-pager {
+    display: flex;
+    flex-direction: column;
+
+    .cars-count {
+      margin: 1em;
+
+      label {
+        margin-right: 1em;
+        font-weight: bold;
+      }
+    }
+  }
+
+  #cars-list-container {
+    min-width: 100%;
+    padding: 1em;
   }
 }
 </style>

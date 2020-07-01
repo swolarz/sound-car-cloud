@@ -40,7 +40,7 @@ export class SoundCarCloudStack extends cdk.Stack {
 
     // Elasticsearch
     const elasticsearchDomain = new elasticsearch.CfnDomain(this, "DomainElasticsearchCluster", {
-      domainName: 'sound-car-cloud-es',
+      domainName: id + '-sound-car-cloud-es',
       elasticsearchClusterConfig: {
         instanceCount: 1,
         instanceType: 't2.small.elasticsearch'
