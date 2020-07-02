@@ -189,29 +189,6 @@ export class SoundCarCloudStack extends cdk.Stack {
       })
     );
 
-
-    // Lambda functions
-    const lambdaCodeAsset = lambda.Code.fromAsset('../lambda/src');
-    const helloLambda = new lambda.Function(this, "HelloHandler", {
-      runtime: lambda.Runtime.PYTHON_3_7,
-      code: lambdaCodeAsset,
-      handler: "lambda.handler",
-      environment: {
-        USER_POOL_ID: userPool.userPoolId,
-        AUTHORIZATION_HEADER_NAME: authorizationHeaderName,
-      }
-    });
-
-    helloLambda.addToRolePolicy(new iam.PolicyStatement(
-      {
-        resources: [userPool.userPoolArn],
-        actions: [
-          "cognito-idp:AdminUserGlobalSignOut",
-          "cognito-idp:AdminGetUser"
-        ]
-      })
-    );
-
     // Rest API
     const api = new apigateway.RestApi(this, id + "RestAPI", {
       defaultCorsPreflightOptions: {
@@ -235,14 +212,11 @@ export class SoundCarCloudStack extends cdk.Stack {
     }
 
     // Lambda Rest Api
-    const helloLambdaIntegration = new apigateway.LambdaIntegration(helloLambda);
     const carSearchLambdaIntegration = new apigateway.LambdaIntegration(carSearchLambda);
     const carInsertLambdaIntegration = new apigateway.LambdaIntegration(carInsertLambda);
     const carEditLambdaIntegration = new apigateway.LambdaIntegration(carEditLambda);
     const carGetLambdaIntegration = new apigateway.LambdaIntegration(carGetLambda);
 
-    api.root.addMethod('GET', helloLambdaIntegration, globalCognitoSecuredMethodOptions);
-    
     const carsHandler = api.root.addResource('cars');
     carsHandler.addMethod('GET', carSearchLambdaIntegration);
     carsHandler.addMethod('POST', carInsertLambdaIntegration, globalCognitoSecuredMethodOptions);

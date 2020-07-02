@@ -13,15 +13,6 @@ const awsmobile = {
   API: {
     endpoints: [
       {
-        name: "hello",
-        endpoint: aws_exports.apiUrl,
-        custom_header: async () => { 
-          return { 
-            Authorization: `Bearer ${(await Auth.currentSession()).getIdToken().getJwtToken()}`
-          }
-        }
-      },
-      {
         name: "carPhotosUpload",
         endpoint: url.resolve(aws_exports.apiUrl, "car-photos"),
         custom_header: async () => { 
