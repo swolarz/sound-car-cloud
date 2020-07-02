@@ -10,6 +10,7 @@ import * as sqses from "@aws-cdk/aws-lambda-event-sources";
 import * as elasticsearch from '@aws-cdk/aws-elasticsearch';
 import * as customresource from '@aws-cdk/custom-resources';
 import * as iam from '@aws-cdk/aws-iam';
+import * as crypto from 'crypto';
 
 
 export class SoundCarCloudStack extends cdk.Stack {
@@ -40,7 +41,7 @@ export class SoundCarCloudStack extends cdk.Stack {
 
     // Elasticsearch
     const elasticsearchDomain = new elasticsearch.CfnDomain(this, "DomainElasticsearchCluster", {
-      domainName: id + '-sound-car-cloud-es',
+      domainName: this.esDomainName(id),
       elasticsearchClusterConfig: {
         instanceCount: 1,
         instanceType: 't2.small.elasticsearch'
@@ -417,5 +418,12 @@ export class SoundCarCloudStack extends cdk.Stack {
       description: "PhotoBucketUrl",
       value: photoBucketUrl
     });
+  }
+
+  esDomainName(stackId: string): string {
+    let shasum = crypto.createHash('sha1');
+    shasum.update(stackId);
+
+    return 'scc-es-' + shasum.digest('hex').substr(0, 20);
   }
 }

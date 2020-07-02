@@ -36,7 +36,9 @@ jobs:
       - name: Setup CDK and deploy project
         working-directory: ./cdk
         run: |
-          export STACK_NAME=SoundCarStackProd-$(echo "${GITHUB_REF#refs/heads/}" | sed -r "s/[^-a-zA-Z0-9]+/-/g")
+          BRANCH_NAME=$(echo "${GITHUB_REF#refs/heads/}")
+          BRANCH_NAME=$(echo "${BRANCH_NAME#refs--}")
+          export STACK_NAME=SoundCarStack-$(echo "$BRANCH_NAME" | sed -r "s/[^-a-zA-Z0-9]+/-/g")
           npm install
           npm run cdk bootstrap
           npm run cdk synth
