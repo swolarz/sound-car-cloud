@@ -10,7 +10,6 @@ import * as sqses from "@aws-cdk/aws-lambda-event-sources";
 import * as elasticsearch from '@aws-cdk/aws-elasticsearch';
 import * as customresource from '@aws-cdk/custom-resources';
 import * as iam from '@aws-cdk/aws-iam';
-import { Policy } from '@aws-cdk/aws-iam';
 
 
 export class SoundCarCloudStack extends cdk.Stack {
@@ -79,7 +78,7 @@ export class SoundCarCloudStack extends cdk.Stack {
       })
     );
 
-    new customresource.AwsCustomResource(this, 'initCarStorageEsIndexResource_v1', {
+    new customresource.AwsCustomResource(this, 'initCarStorageEsIndexResource_v2', {
       onCreate: {
         service: 'Lambda',
         action: 'invoke',
@@ -98,11 +97,36 @@ export class SoundCarCloudStack extends cdk.Stack {
       }
     });
 
+    const photosBucket = new s3.Bucket(this, 'SoundCarCloudUIBucketPhotos', {
+      publicReadAccess: true,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+    const photoBucketUrl = `https://${photosBucket.bucketName}.s3.amazonaws.com/`;
+
+    // Cars search lambda
+    const carSearchLambda = new lambda.Function(this, 'CarStorageSearchHandler', {
+      runtime: lambda.Runtime.PYTHON_3_7,
+      code: carStorageCodeAsset,
+      handler: 'car_query.handler',
+      environment: {
+        ELASTICSEARCH_SERVICE_ENDPOINT: elasticsearchDomain.attrDomainEndpoint,
+        CAR_PHOTOS_BUCKET_URL: photoBucketUrl,
+        USER_POOL_ID: userPool.userPoolId,
+        AUTHORIZATION_HEADER_NAME: authorizationHeaderName
+      }
+    });
+    carSearchLambda.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: [ 'es:*' ],
+        resources: [ elasticsearchDomain.attrArn + '*' ]
+      })
+    );
+
     // Cars CRUD lambdas
     const carInsertLambda = new lambda.Function(this, 'CarStorageInsertHandler', {
       runtime: lambda.Runtime.PYTHON_3_7,
       code: carStorageCodeAsset,
-      handler: 'car_insert.handler',
+      handler: 'car_command.post_car_handler',
       environment: {
         ELASTICSEARCH_SERVICE_ENDPOINT: elasticsearchDomain.attrDomainEndpoint,
         USER_POOL_ID: userPool.userPoolId,
@@ -120,7 +144,7 @@ export class SoundCarCloudStack extends cdk.Stack {
     const carEditLambda = new lambda.Function(this, 'CarStorageEditHandler', {
       runtime: lambda.Runtime.PYTHON_3_7,
       code: carStorageCodeAsset,
-      handler: 'car_insert.put_car_handler',
+      handler: 'car_command.put_car_handler',
       environment: {
         ELASTICSEARCH_SERVICE_ENDPOINT: elasticsearchDomain.attrDomainEndpoint,
         USER_POOL_ID: userPool.userPoolId,
@@ -137,7 +161,7 @@ export class SoundCarCloudStack extends cdk.Stack {
     const carGetLambda = new lambda.Function(this, 'CarStorageGetHandler', {
       runtime: lambda.Runtime.PYTHON_3_7,
       code: carStorageCodeAsset,
-      handler: 'car_insert.get_car_handler',
+      handler: 'car_command.get_car_handler',
       environment: {
         ELASTICSEARCH_SERVICE_ENDPOINT: elasticsearchDomain.attrDomainEndpoint,
       }
@@ -152,7 +176,7 @@ export class SoundCarCloudStack extends cdk.Stack {
     const assignPhotoToCar = new lambda.Function(this, 'AssignPhotoToCar', {
       runtime: lambda.Runtime.PYTHON_3_7,
       code: carStorageCodeAsset,
-      handler: 'car_insert.assign_photo_to_car',
+      handler: 'car_command.assign_photo_to_car',
       environment: {
         ELASTICSEARCH_SERVICE_ENDPOINT: elasticsearchDomain.attrDomainEndpoint,
       }
@@ -188,7 +212,7 @@ export class SoundCarCloudStack extends cdk.Stack {
     );
 
     // Rest API
-    const api = new apigateway.RestApi(this, id + "HelloAPI", {
+    const api = new apigateway.RestApi(this, id + "RestAPI", {
       defaultCorsPreflightOptions: {
         allowOrigins: ["*"],
         allowHeaders: ['Authorization', "Access-Control-Allow-Origin", "Content-Type"]
@@ -210,15 +234,16 @@ export class SoundCarCloudStack extends cdk.Stack {
     }
 
     // Lambda Rest Api
-    const helloLambdaIntegration = new apigateway.LambdaIntegration(helloLambda,);
+    const helloLambdaIntegration = new apigateway.LambdaIntegration(helloLambda);
+    const carSearchLambdaIntegration = new apigateway.LambdaIntegration(carSearchLambda);
     const carInsertLambdaIntegration = new apigateway.LambdaIntegration(carInsertLambda);
     const carEditLambdaIntegration = new apigateway.LambdaIntegration(carEditLambda);
     const carGetLambdaIntegration = new apigateway.LambdaIntegration(carGetLambda);
 
     api.root.addMethod('GET', helloLambdaIntegration, globalCognitoSecuredMethodOptions);
-    const carsHandlerPath = "cars";
     
-    const carsHandler = api.root.addResource(carsHandlerPath);
+    const carsHandler = api.root.addResource('cars');
+    carsHandler.addMethod('GET', carSearchLambdaIntegration);
     carsHandler.addMethod('POST', carInsertLambdaIntegration, globalCognitoSecuredMethodOptions);
     
     const carHandler = carsHandler.addResource('{car_id}')
@@ -281,19 +306,15 @@ export class SoundCarCloudStack extends cdk.Stack {
       userPoolId: userPool.userPoolId
     });
 
-    const photosBucket = new s3.Bucket(this, 'SoundCarCloudUIBucketPhotos', {
-      publicReadAccess: true,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-    });
-
     const uploadPhotosLambdaEnvironment = {
       Bucket: photosBucket.bucketName,
       GetCarLambda: carGetLambda.functionArn 
     };
 
+    const mediaUploadCodeAsset = lambda.Code.fromAsset('../lambda/src/upload');
     const uploadPhotosLambda = new lambda.Function(this, "UploadPhotosHandler", {
       runtime: lambda.Runtime.PYTHON_3_7,
-      code: lambda.Code.fromAsset('../lambda/src/upload'),
+      code: mediaUploadCodeAsset,
       handler: "photosUpload.upload",
       environment: uploadPhotosLambdaEnvironment
     });
@@ -305,8 +326,7 @@ export class SoundCarCloudStack extends cdk.Stack {
 
     photosBucket.grantWrite(uploadPhotosLambda);
     
-    const photosUploadPath = "photosUpload";
-    const photosUpload = api.root.addResource(photosUploadPath);
+    const photosUpload = api.root.addResource('car-photos');
     photosUpload.addMethod("POST", 
       new apigateway.LambdaIntegration(uploadPhotosLambda),
       globalCognitoSecuredMethodOptions
@@ -327,8 +347,8 @@ export class SoundCarCloudStack extends cdk.Stack {
 
     const photoRecognizer = new lambda.Function(this, "PhotoRecognizer", {
       runtime: lambda.Runtime.PYTHON_3_7,
-      code: lambda.Code.fromAsset('../lambda/src/validators'),
-      handler: "carOnPhotoValidator.validate",
+      code: mediaUploadCodeAsset,
+      handler: "carPhotoValidator.validate",
       environment: photoRecognizerEnvironment,
     });
     photoRecognizer.addEventSource(new sqses.SqsEventSource(createdPhotosQueue, { batchSize: 1 }));
@@ -378,7 +398,7 @@ export class SoundCarCloudStack extends cdk.Stack {
       value: cfnUserPoolClient.ref
     });
 
-    new cdk.CfnOutput(this, "APIUrlOutput", {
+    new cdk.CfnOutput(this, "ApiUrl", {
       description: "API URL",
       value: api.url
     });
@@ -393,19 +413,9 @@ export class SoundCarCloudStack extends cdk.Stack {
       value: uiBucketName
     });
 
-    new cdk.CfnOutput(this, "UploadPhotosPath", {
-      description: "UploadPhotosPath",
-      value: api.url + photosUploadPath
-    });
-
-    new cdk.CfnOutput(this, "CarsHandlerPath", {
-      description: "CarsHandlerPath",
-      value: api.url + carsHandlerPath
-    });
-
     new cdk.CfnOutput(this, "PhotoBucketUrl", {
       description: "PhotoBucketUrl",
-      value: `https://${photosBucket.bucketName}.s3.amazonaws.com/` 
+      value: photoBucketUrl
     });
   }
 }

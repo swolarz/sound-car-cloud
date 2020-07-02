@@ -1,17 +1,20 @@
-import aws_generated_exports from './autoGenConfig';
+import aws_exports from './autoGenConfig';
 import { Auth } from "aws-amplify"
+
+import * as url from 'url';
+
 
 const awsmobile = {
   Auth: {
-    region: aws_generated_exports.regio,
-    userPoolId: aws_generated_exports.cognitoUserPoolId,
-    userPoolWebClientId:  aws_generated_exports.cognitoUserPoolAppClientId,
+    region: aws_exports.regio,
+    userPoolId: aws_exports.cognitoUserPoolId,
+    userPoolWebClientId:  aws_exports.cognitoUserPoolAppClientId,
   },
   API: {
     endpoints: [
       {
         name: "hello",
-        endpoint: aws_generated_exports.apiUrl,
+        endpoint: aws_exports.apiUrl,
         custom_header: async () => { 
           return { 
             Authorization: `Bearer ${(await Auth.currentSession()).getIdToken().getJwtToken()}`
@@ -19,8 +22,8 @@ const awsmobile = {
         }
       },
       {
-        name: "uploadPhotos",
-        endpoint: aws_generated_exports.uploadPhotosPath,
+        name: "carPhotosUpload",
+        endpoint: url.resolve(aws_exports.apiUrl, "car-photos"),
         custom_header: async () => { 
           return { 
             Authorization: `Bearer ${(await Auth.currentSession()).getIdToken().getJwtToken()}`,
@@ -29,8 +32,8 @@ const awsmobile = {
         }
       },
       {
-        name: "carsHandler",
-        endpoint: aws_generated_exports.carsHandlerPath,
+        name: "carUpload",
+        endpoint: url.resolve(aws_exports.apiUrl, 'cars'),
         custom_header: async () => { 
           return { 
             Authorization: `Bearer ${(await Auth.currentSession()).getIdToken().getJwtToken()}`,
@@ -39,8 +42,8 @@ const awsmobile = {
         },
       },
       {
-        name: "carsGetHandler",
-        endpoint: aws_generated_exports.carsHandlerPath,
+        name: "carFetch",
+        endpoint: url.resolve(aws_exports.apiUrl, 'cars'),
         custom_header: async () => { 
           return { 
             "Content-Type": 'application/json' 

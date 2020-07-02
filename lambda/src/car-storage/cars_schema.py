@@ -10,6 +10,10 @@ schema = {
             'ownerId': {
                 'type': 'keyword'
             },
+            'ownerName': {
+                'type': 'keyword',
+                'copy_to': 'fullText'
+            },
             'engineSoundFile': {
                 'type': 'keyword'
             },
@@ -17,9 +21,14 @@ schema = {
                 'type': 'keyword'
             },
             'carTitle': {
-                'type': 'text'
+                'type': 'text',
+                'copy_to': 'fullText'
             },
             'carDescription': {
+                'type': 'text',
+                'copy_to': 'fullText'
+            },
+            'carIntroDescription': {
                 'type': 'text'
             },
             'horsePower': {
@@ -30,9 +39,14 @@ schema = {
             },
             'year': {
                 'type': 'date',
-                'format': 'yyyy'
+                'format': 'yyyy',
+                'copy_to': 'full_text'
             },
             'engine': {
+                'type': 'text',
+                'copy_to': 'fullText'
+            },
+            'fullText': {
                 'type': 'text'
             }
         }

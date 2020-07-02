@@ -23,7 +23,7 @@ def response(status_code: int, response: object):
     }
 
 
-def prepare_car_document(car_request: object, user_id: str, photo_id: str):
+def prepare_car_document(car_request: object, user: dict, photo_id: str):
     validate(car_request, {
         'type': 'object',
         'properties': {
@@ -33,27 +33,56 @@ def prepare_car_document(car_request: object, user_id: str, photo_id: str):
             'horsePower': {'type': 'integer', 'minimum': 0, 'maximum': 10000},
             'mileage': {'type': 'integer', 'minimum': 0, 'maximum': 2000000},
             'year': {'type': 'integer', 'minimum': 1900, 'maximum': 2100}
-        }
+        },
+        'required': ['carTitle', 'carDescription', 'engine']
     })
+
+    user_id = user['id']
+    user_name = user['name']
+
+    car_intro = ' '.join(car_request['carDescription'][:200].split())
 
     return {
         'carTitle': car_request['carTitle'],
         'carDescription': car_request['carDescription'],
+        'carIntroDescription': car_intro,
         'engine': car_request['engine'],
         'horsePower': car_request['horsePower'],
         'mileage': car_request['mileage'],
         'year': str(car_request['year']),
         'ownerId': user_id,
+        'ownerName': user_name,
         'photoId': photo_id
     }
 
 
 def get_car_document(es: Elasticsearch, car_id: str):
-    result = es.get(index=cars_index_name, id=car_id)
+    fields = [
+        'carTitle', 'carDescription',
+        'photoId', 'engineSoundFile',
+        'ownerId', 'ownerName',
+        'engine', 'horsePower', 'year', 'mileage'
+    ]
+
+    result = es.get(index=cars_index_name, id=car_id, _source=fields)
     car_doc = result['_source']
     car_doc['id'] = result['_id']
 
-    return car_doc
+    return {
+        'id': result['_id'],
+        'owner': {
+            'id': car_doc['ownerId'],
+            'name': car_doc['ownerName']
+        },
+        'carTitle': car_doc['carTitle'],
+        'carDescription': car_doc['carDescription'],
+        'photoUrl': car_doc['photoId'],
+        # 'engineSoundUrl': car_doc['engineSoundFile'],
+        'engine': car_doc['engine'],
+        'horsePower': car_doc['horsePower'],
+        'year': car_doc['year'],
+        'mileage': car_doc['mileage']
+    }
 
 
 def get_es_client() -> Elasticsearch:
@@ -70,15 +99,18 @@ def get_es_client() -> Elasticsearch:
         })
 
 
-def get_user_id(event): 
-    return event["requestContext"]["authorizer"]["claims"]["sub"]
+def get_user(event) -> dict:
+    return {
+        'id': event["requestContext"]["authorizer"]["claims"]["sub"],
+        'name': '__user__'
+    }
 
 
-def prepare_car_doc(event_body, user_id, photo_id):
+def create_car_document(event_body, user, photo_id):
     # Parse and validate new car request body
     try:
         car_request = json.loads(event_body)
-        return (True, prepare_car_document(car_request, user_id, photo_id))
+        return (True, prepare_car_document(car_request, user, photo_id))
     except json.decoder.JSONDecodeError:
         logging.exception('Failed to decode request body json')
         return (False, response(400, {
@@ -93,8 +125,8 @@ def prepare_car_doc(event_body, user_id, photo_id):
         }))
 
 
-def index_car(es, car_request_data, car_id, user_id, photo_id):
-    success, result = prepare_car_doc(car_request_data, user_id, photo_id)
+def index_car(es, car_request_data, car_id, user, photo_id):
+    success, result = create_car_document(car_request_data, user, photo_id)
     
     if not success:
         return result
@@ -113,24 +145,25 @@ def index_car(es, car_request_data, car_id, user_id, photo_id):
     return response(200, car_doc)
 
 
-def handler(event, context):
+def post_car_handler(event, context):
     es = get_es_client()
-    user_id = get_user_id(event)
+    user = get_user(event)
     
-    return index_car(es, event['body'], None, user_id, None)
+    return index_car(es, event['body'], None, user, None)
 
 
 def put_car_handler(event, context):
-    user_id = get_user_id(event)
+    user = get_user(event)
+    user_id = user['id']
     car_id = event["pathParameters"]["car_id"]
 
     es = get_es_client()
     car_doc = get_car_document(es, car_id)
 
     if car_doc['ownerId'] != user_id:
-        return response(403, car_doc)
+        return response(403, 'Not authorized to modify this car')
 
-    return index_car(es, event['body'], car_id, user_id, car_doc['photoId'])
+    return index_car(es, event['body'], car_id, user, car_doc['photoId'])
 
 
 def get_car_handler(event, context):
@@ -152,7 +185,11 @@ def assign_photo_to_car(event, context):
     car_doc = get_car_document(es, car_id)
     car_doc['photoId'] = photo_id
 
+    user_id = get_user(event)['id']
+    if car_doc['ownerId'] != user_id:
+        return response(403, 'Not authorized to modify this car')
+
     try:
         es.index(index=cars_index_name, body=car_doc, id=car_id)
     except Exception:
-        logging.exception('Failed to insert new car')
+        logging.exception('Failed to insert new car photo')

@@ -14,11 +14,9 @@ class GenerateCognitoConfig {
         const cognitoDomainPrefix = outputsByName.get("CognitoDomainOutput");
         const userPoolId = outputsByName.get("UserPoolIdOutput");
         const appClientId = outputsByName.get("AppClientIdOutput");
-        const apiURL = outputsByName.get("APIUrlOutput");
+        const apiURL = outputsByName.get("ApiUrl");
         const appURL = outputsByName.get("AppUrl");
         const uiBucketName = outputsByName.get("UIBucketName") || "";
-        const uploadPhotosPath = outputsByName.get("UploadPhotosPath");
-        const carsHandlerPath = outputsByName.get("CarsHandlerPath");
         const photoBucketUrl = outputsByName.get("PhotoBucketUrl");
 
         const cognitoDomain = `${cognitoDomainPrefix}.auth.${region}.amazoncognito.com`;
@@ -30,8 +28,6 @@ class GenerateCognitoConfig {
           apiUrl: apiURL,
           appUrl: appURL,
           uiBucketName: uiBucketName,
-          uploadPhotosPath: uploadPhotosPath,
-          carsHandlerPath: carsHandlerPath,
           photoBucketUrl: photoBucketUrl
         };
     
