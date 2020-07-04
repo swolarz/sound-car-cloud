@@ -52,24 +52,17 @@ def prepare_car_document(car_request: object, user: dict, media_bucket: str):
     car_intro = ' '.join(car_request['carDescription'][:200].split())
 
     try:
-        photo_key = 'car-photos/{}'.format(car_request['photoId'])
-        s3_client.head_object(Bucket=media_bucket, Key=photo_key)
-    except ClientError as e:
-        logging.exception('Car photos lookup error: {}'.format(photo_key))
-        if e.response['Error']['Code'] == 'NoSuchKey':
-            raise CarPhotoNotFoundException
-        else:
-            raise
+        if car_request['photoId']:
+            photo_key = 'car-photos/{}'.format(car_request['photoId'])
+            s3_client.head_object(Bucket=media_bucket, Key=photo_key)
+    except ClientError:
+        raise CarPhotoNotFoundException
 
     try:
         audio_key = 'car-audio/{}'.format(car_request['audioId'])
         s3_client.head_object(Bucket=media_bucket, Key=audio_key)
-    except ClientError as e:
-        logging.exception('Car audio lookup error: {}'.format(audio_key))
-        if e.response['Error']['Code'] == 'NoSuchKey':
-            raise CarAudioNotFoundException
-        else:
-            raise
+    except ClientError:
+        raise CarAudioNotFoundException
 
     return {
         'carTitle': car_request['carTitle'],

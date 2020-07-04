@@ -25,6 +25,9 @@
         <div v-if="editMode" class="car-input car-audio-input">
           <label>Upload engine sound</label>
           <AudioUpload v-model="car.audioId" @uploaderror="onAudioUploadError" />
+        </div>
+
+        <div class="car-input car-audio-player">
           <AudioPlayer v-bind:audioUrl="carAudioUrl" />
         </div>
 
@@ -116,17 +119,17 @@ export default {
       this.editMode = true;
     }
   },
-  watch: {
-    "$route.params.pathMatch": function() {
-      this.loadCarFromLinkIfNeeded();
-    }
-  },
+  // watch: {
+  //   "$route.params.pathMatch": function() {
+  //     this.loadCarFromLinkIfNeeded();
+  //   }
+  // },
   computed: {
     saveButtonText: function() {
       return this.carId ? "Save" : "Save new";
     },
     isOwner: function() {
-      return (this.car.ownerId && this.car.ownerId.localeCompare(this.$store.state.user.attributes.sub));
+      return (this.car.ownerId && this.car.ownerId.localeCompare(this.$store.state.user.attributes.sub) == 0);
     },
     carPhotoUrl: function() {
       if (!this.car.photoId) {
@@ -141,7 +144,7 @@ export default {
       return url.resolve(aws_exports.mediaBucketUrl, `car-audio/${this.car.audioId}`)
     },
     loaderText: function() {
-      return (this.carNotFound) ? 'Car is not available' : 'Loading car data';
+      return (this.carNotFound) ? 'Car not found' : 'Loading car data';
     }
   },
   methods: {
@@ -301,6 +304,11 @@ export default {
       label {
         align-self: center;
       }
+    }
+
+    .car-audio-player {
+      display: flex;
+      justify-content: center;
     }
 
     .car-text-input {
