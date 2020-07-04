@@ -261,11 +261,11 @@ export class SoundCarCloudStack extends cdk.Stack {
     const carsHandler = api.root.addResource('cars');
     carsHandler.addMethod('GET', carSearchLambdaIntegration);
     carsHandler.addMethod('POST', carInsertLambdaIntegration, globalCognitoSecuredMethodOptions);
-    carsHandler.addMethod('DELETE', carDeleteLambdaIntegration, globalCognitoSecuredMethodOptions);
     
     const carHandler = carsHandler.addResource('{car_id}')
-    carHandler.addMethod('PUT', carEditLambdaIntegration, globalCognitoSecuredMethodOptions);
     carHandler.addMethod('GET', carGetLambdaIntegration);
+    carHandler.addMethod('PUT', carEditLambdaIntegration, globalCognitoSecuredMethodOptions);
+    carsHandler.addMethod('DELETE', carDeleteLambdaIntegration, globalCognitoSecuredMethodOptions);
 
     // Web UI
     const uiBucket = new s3.Bucket(this, 'SoundCarCloudUIBucket', {

@@ -129,7 +129,7 @@ export default {
       return this.carId ? "Save" : "Save new";
     },
     isOwner: function() {
-      return (this.car.ownerId && this.car.ownerId.localeCompare(this.$store.state.user.attributes.sub) == 0);
+      return (this.car.ownerId && this.$store.state.signedIn && this.car.ownerId === this.$store.state.user.attributes.sub);
     },
     carPhotoUrl: function() {
       if (!this.car.photoId) {
