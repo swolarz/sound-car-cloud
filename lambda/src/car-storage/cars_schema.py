@@ -14,7 +14,7 @@ schema = {
                 'type': 'keyword',
                 'copy_to': 'fullText'
             },
-            'engineSoundFile': {
+            'engineAudioId': {
                 'type': 'keyword'
             },
             'photoId': {
@@ -40,7 +40,8 @@ schema = {
             'year': {
                 'type': 'date',
                 'format': 'yyyy',
-                'copy_to': 'full_text'
+                'ignore_malformed': 'true',
+                'copy_to': 'fullText'
             },
             'engine': {
                 'type': 'text',

@@ -43,6 +43,11 @@ const router = new Router({
       path: '/cars/*',
       name: 'cars',
       component: Car
+    },
+    {
+      path: '/cars',
+      name: 'addCar',
+      component: Car
     }
   ]
 })

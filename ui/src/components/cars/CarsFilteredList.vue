@@ -46,7 +46,7 @@
 import CarsList from './CarsList';
 import RangeFilter from '../filter/RangeFilter';
 import StatusMessage from '../StatusMessage';
-import SuperCars from './MockCars';
+// import SuperCars from './MockCars';
 import { API } from "aws-amplify";
 
 export default {
@@ -135,7 +135,7 @@ export default {
       params.page = this.page - 1;
       params.perPage = this.perPage;
 
-      this.cars = SuperCars.mocks;
+      this.cars = []; // SuperCars.mocks;
 
       API.get('carFetch', '', { queryStringParameters: params })
         .then(response => {
@@ -213,9 +213,6 @@ export default {
         status: status,
         message: message
       };
-    },
-    clearStatus: async function() {
-      await this.setStatus('', '');
     }
   }
 }
@@ -226,7 +223,6 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-
 
   #cars-status-message {
     min-width: 100%;

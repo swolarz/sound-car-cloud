@@ -17,7 +17,7 @@ class GenerateCognitoConfig {
         const apiURL = outputsByName.get("ApiUrl");
         const appURL = outputsByName.get("AppUrl");
         const uiBucketName = outputsByName.get("UIBucketName") || "";
-        const photoBucketUrl = outputsByName.get("PhotoBucketUrl");
+        const mediaBucketUrl = outputsByName.get("MediaBucketUrl");
 
         const cognitoDomain = `${cognitoDomainPrefix}.auth.${region}.amazoncognito.com`;
         const params = {
@@ -28,7 +28,7 @@ class GenerateCognitoConfig {
           apiUrl: apiURL,
           appUrl: appURL,
           uiBucketName: uiBucketName,
-          photoBucketUrl: photoBucketUrl
+          mediaBucketUrl: mediaBucketUrl
         };
     
         const autoGenConfigFile = "// this file is auto generated, do not edit it directly\n" +

@@ -1,15 +1,18 @@
 import json
 import boto3
 import os
+import logging
+logging.getLogger().setLevel(logging.INFO)
 
 rekog = boto3.client('rekognition')
 ses = boto3.client('ses')
 lambda_client = boto3.client("lambda")
 cognito_client = boto3.client('cognito-idp')
 
-get_car_lambda_arn = os.getenv("GetCarLambda")
-assign_photo_to_car_lambda_arn = os.getenv("AssignPhotoToCarLambdaArn")
+car_photo_owner_lambda_arn = os.getenv("CarPhotoOwnerLambdaArn")
+cenzor_car_photo_lambda_arn = os.getenv("CenzorCarPhotoLambdaArn")
 user_pool_id = os.getenv("UserPoolId")
+
 
 def check_label(recog_response, label):
     for i in recog_response['Labels']:
@@ -18,7 +21,7 @@ def check_label(recog_response, label):
     return False
 
 
-def validate(event, context):
+def handler(event, context):
     if 'Records' not in event:
         return
 
@@ -39,38 +42,35 @@ def validate(event, context):
                 MinConfidence=90
             )
 
-            car_id = key.split('.')[0]
+            photo_id = key
 
             if check_label(response, 'car') and not check_label(response, 'human'):
-                print('Valid photo')
-                
-                photo_id = key
+                logging.info('Valid photo')
+            else:
+                logging.info('Invalid photo')
+
+                owner_response = lambda_client.invoke(
+                    FunctionName = car_photo_owner_lambda_arn,
+                    InvocationType = "RequestResponse",
+                    Payload = json.dumps({
+                        "photo_id": photo_id
+                    })
+                )
 
                 lambda_client.invoke(
-                    FunctionName = assign_photo_to_car_lambda_arn,
+                    FunctionName = cenzor_car_photo_lambda_arn,
                     InvocationType = "RequestResponse",
                     Payload = json.dumps({
-                        "car_id": car_id,
-                        "photo_id": photo_id,
-                    })
-                )
-            else:
-                print('Invalid photo')
-
-                car_get_response = lambda_client.invoke(
-                    FunctionName = get_car_lambda_arn,
-                    InvocationType = "RequestResponse",
-                    Payload = json.dumps({
-                        "car_id": car_id
+                        "photo_id": photo_id
                     })
                 )
 
-                response_str = car_get_response['Payload'].read()
+                response_str = owner_response['Payload'].read()
                 response_dict = json.loads(response_str)
                 response_body_dict = json.loads(response_dict['body'])
-                car_owner_id = response_body_dict['ownerId']
+                photo_owner_id = response_body_dict['owner']['id']
 
-                filter = "sub = \"{}\"".format(car_owner_id)
+                filter = "sub = \"{}\"".format(photo_owner_id)
 
                 users = cognito_client.list_users(
                     UserPoolId=user_pool_id, 

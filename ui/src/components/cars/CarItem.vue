@@ -1,7 +1,8 @@
 <template>
   <div class="car-item">
     <div class="car-image">
-      <img :src="car.photoUrl" />
+      <img v-if="car.photoUrl" :src="car.photoUrl" />
+      <img v-if="!car.photoUrl" src="@/assets/car-placeholder.png" />
     </div>
     <div class="car-info">
       <div class="car-header">
@@ -34,11 +35,16 @@
             <span>{{ car.mileage }}</span>
           </div>
         </div>
-        <div class="car-link">
-          <router-link :to="carDetailsUrl">
-            Car details
-            <b-icon-chevron-compact-right />
-          </router-link>
+        <div class="car-buttons-panel">
+          <div class="car-sound-panel">
+            <AudioPlayer v-bind:audioUrl="car.audioUrl" />
+          </div>
+          <div class="car-link">
+            <router-link :to="carDetailsUrl">
+              Car details
+              <b-icon-chevron-compact-right />
+            </router-link>
+          </div>
         </div>
       </div>
     </div>
@@ -46,10 +52,15 @@
 </template>
 
 <script>
+import AudioPlayer from '@/components/AudioPlayer';
+
 export default {
   name: 'CarItem',
   props: {
     car: Object
+  },
+  components: {
+    AudioPlayer
   },
   computed: {
     carDetailsUrl: function() {
@@ -125,8 +136,18 @@ export default {
 
       padding: 1em;
 
-      .car-link {
-        align-self: flex-end;
+      .car-buttons-panel {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+
+        .car-sound-panel {
+          align-self: center;
+        }
+
+        .car-link {
+          align-self: flex-end;
+        }
       }
 
       .car-attributes {

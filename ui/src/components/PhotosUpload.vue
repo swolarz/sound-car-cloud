@@ -1,54 +1,62 @@
 <template>
-  <div class="photosUploader">
-    <input type="file" @change="onFileSelected">
-    <button @click="onUploadButtonClicked">Upload</button>
-  </div>
+    <div class="photos-upload">
+        <b-icon-camera class="h2" />
+        <input type="file" accept="image/*" @change="onFileSelected" />
+        <button @click="onUploadButtonClicked">Upload</button>
+    </div>
 </template>
 
 <script>
 import { API } from "aws-amplify";
 
 export default {
-  name: 'PhotosUploader',
-  props: {
-    carId: String,
-  },
-  data() {
-      return {
-          selectedFile: null
-      }
-  },
-  methods: {
-      onFileSelected(event) {
-          this.selectedFile = event.target.files[0];
-          console.log(this.carId);
-      },
-      onUploadButtonClicked() {
-          readBytesOfFile(this.selectedFile, this.sendFile);
-      },
-      sendFile(file) {
-        let params = {
-            body: {
-                photo: file,
-                carId: this.carId
-            }
+    name: 'PhotosUploader',
+    props: {
+        value: String
+    },
+    data() {
+        return {
+            selectedFile: null,
+            lastPhotoId: null
         }
+    },
+    methods: {
+        onFileSelected(event) {
+            this.selectedFile = event.target.files[0];
+        },
+        onUploadButtonClicked() {
+            if (!this.selectedFile) {
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = e => this.sendImage(e.target.result);
+            reader.readAsDataURL(this.selectedFile);
+        },
+        sendImage(imageContents) {
+            let params = {
+                body: {
+                    photo: imageContents,
+                    prevPhotoId: this.lastPhotoId
+                }
+            }
 
-        API.post("carPhotosUpload", "", params)
-        .then(response => {
-            console.log(response);
-        })
-        .catch(error => {
-            console.log(error);
-        });
-      }
-  }
+            API.post("carPhotosUpload", "", params)
+                .then(response => {
+                    console.log(response);
+                    this.lastPhotoId = response.photoId;
+                    this.$emit('input', response.photoId);
+                })
+                .catch(error => {
+                    this.$emit('uploaderror', { message: error.message });
+                });
+        }
+    }
 }
-
-function readBytesOfFile(file, callback) {
-    const reader = new FileReader();
-    reader.onload = e => callback(e.target.result);
-    reader.readAsDataURL(file);
-}
-
 </script>
+
+<style scoped lang="scss">
+.photos-upload {
+    display: flex;
+    align-items: center;
+}
+</style>

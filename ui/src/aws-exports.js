@@ -23,6 +23,16 @@ const awsmobile = {
         }
       },
       {
+        name: "carAudioUpload",
+        endpoint: url.resolve(aws_exports.apiUrl, "car-audio"),
+        custom_header: async () => {
+          return {
+            Authorization: `Bearer ${(await Auth.currentSession()).getIdToken().getJwtToken()}`,
+            "Content-Type": 'application/json' 
+          }
+        }
+      },
+      {
         name: "carUpload",
         endpoint: url.resolve(aws_exports.apiUrl, 'cars'),
         custom_header: async () => { 
@@ -40,7 +50,7 @@ const awsmobile = {
             "Content-Type": 'application/json' 
           }
         },
-      },
+      }
     ],
   },
 };
