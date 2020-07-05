@@ -119,11 +119,11 @@ export default {
       this.editMode = true;
     }
   },
-  // watch: {
-  //   "$route.params.pathMatch": function() {
-  //     this.loadCarFromLinkIfNeeded();
-  //   }
-  // },
+  watch: {
+    "$route.params.pathMatch": function() {
+      this.loadCarFromLinkIfNeeded();
+    }
+  },
   computed: {
     saveButtonText: function() {
       return this.carId ? "Save" : "Save new";
@@ -158,7 +158,7 @@ export default {
     save() {
       this.setStatus("", "");
       if (this.carId) {
-        API.put("carUpload", "" + this.carId, { body: this.getCarForm() })
+        API.put("carUpload", `/${this.carId}`, { body: this.getCarForm() })
           .then(response => {
             console.log(response);
             this.setStatus("success", "Car updated successfully");
@@ -191,7 +191,7 @@ export default {
       };
     },
     deleteCar: async function() {
-      API.del('carUpload', `/${this.carId}`)
+      API.del('carUpload', `/${this.carId}`, { body: {} })
         .then(response => {
           console.log(response);
           this.$router.replace('/');

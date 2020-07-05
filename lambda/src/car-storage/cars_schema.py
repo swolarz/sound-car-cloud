@@ -38,9 +38,7 @@ schema = {
                 'type': 'integer'
             },
             'year': {
-                'type': 'date',
-                'format': 'yyyy',
-                'ignore_malformed': 'true',
+                'type': 'integer',
                 'copy_to': 'fullText'
             },
             'engine': {

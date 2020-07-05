@@ -46,7 +46,7 @@ jobs:
           npm run generate-config -- "${STACK_NAME}" "${STACK_REGION}" ../ui/src/autoGenConfig.js
         env:
           STACK_REGION: ${{ env.AWS_REGION }}
-          VERIFIED_MAIL: registration@carcloud.com
+          VERIFIED_MAIL: szymon.wolarz@student.put.poznan.pl
           VERIFIED_MAIL_REGION: ${{ env.AWS_REGION }}
 
       - name: Build website and deploy

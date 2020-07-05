@@ -9,22 +9,34 @@ s3client = boto3.client("s3")
 bucket = os.getenv("Bucket")
 
 
-def prepare_response(code, photoId):
+def prepare_response(code, response):
     return {
         'statusCode': code,
         'headers': {
             "Access-Control-Allow-Credentials" : True,
             "Access-Control-Allow-Origin": "*"
         },
-        'body': json.dumps({ "photoId": photoId })
+        'body': json.dumps(response)
     }
+
+
+def get_user_id(event):
+    return event["requestContext"]["authorizer"]["claims"]["sub"]
 
 
 def handler(event, context):
     request_body = json.loads(event['body'])
     imageData = request_body["photo"].split(',')[1]
     extenstion = re.split(";|/", request_body["photo"])[1]
-    photoId = '{}.{}'.format(str(uuid.uuid4()), extenstion)
+
+    owner_id = get_user_id(event)
+    if not owner_id:
+        return prepare_response(403, {
+            'error': 'photo-upload-not-authorized',
+            'message': 'Not authorized to upload photo'
+        })
+
+    photoId = '{}.{}.{}'.format(owner_id, str(uuid.uuid4()), extenstion)
     photoKey = 'car-photos/{}'.format(photoId)
 
     s3client.put_object(
@@ -33,4 +45,4 @@ def handler(event, context):
         Body=base64.b64decode(imageData)
     )
     
-    return prepare_response(200, photoId)
+    return prepare_response(200, { "photoId": photoId })

@@ -30,6 +30,14 @@ def response(status_code: int, response: object):
     }
 
 
+def does_media_exist(media_bucket, media_key):
+    try:
+        s3_client.head_object(Bucket=media_bucket, Key=media_key)
+        return True
+    except ClientError:
+        return False
+
+
 def prepare_car_document(car_request: object, user: dict, media_bucket: str):
     validate(car_request, {
         'type': 'object',
@@ -43,7 +51,7 @@ def prepare_car_document(car_request: object, user: dict, media_bucket: str):
             'photoId': {'type': 'string', 'maxLength': 200},
             'audioId': {'type': 'string', 'maxLength': 200}
         },
-        'required': ['carTitle', 'carDescription', 'engine', 'audioId']
+        'required': ['carTitle', 'carDescription', 'engine', 'horsePower', 'mileage', 'year', 'audioId']
     })
 
     user_id = user['id']
@@ -51,20 +59,21 @@ def prepare_car_document(car_request: object, user: dict, media_bucket: str):
 
     car_intro = ' '.join(car_request['carDescription'][:200].split())
 
-    try:
-        if car_request['photoId']:
-            photo_key = 'car-photos/{}'.format(car_request['photoId'])
-            s3_client.head_object(Bucket=media_bucket, Key=photo_key)
-    except ClientError:
-        raise CarPhotoNotFoundException
+    if car_request['photoId']:
+        photo_key = 'car-photos/{}'.format(car_request['photoId'])
+        photo_exists = does_media_exist(media_bucket, photo_key)
+        if not photo_exists:
+            car_request['photoId'] = ''
 
-    try:
-        audio_key = 'car-audio/{}'.format(car_request['audioId'])
-        s3_client.head_object(Bucket=media_bucket, Key=audio_key)
-    except ClientError:
-        raise CarAudioNotFoundException
+    if not car_request['audioId']:
+        raise ValueError('Car audio not uploaded')
+    
+    audio_key = 'car-audio/{}'.format(car_request['audioId'])
+    audio_exists = does_media_exist(media_bucket, audio_key)
+    if not audio_exists:
+        raise ValueError('car-audio-not-found')
 
-    return {
+    car_doc = {
         'carTitle': car_request['carTitle'],
         'carDescription': car_request['carDescription'],
         'carIntroDescription': car_intro,
@@ -77,6 +86,8 @@ def prepare_car_document(car_request: object, user: dict, media_bucket: str):
         'photoId': car_request['photoId'],
         'engineAudioId': car_request['audioId']
     }
+    logging.info('Parsed and validated car document: {}'.format(json.dumps(car_doc, indent=2)))
+    return car_doc
 
 
 def get_car_document(es: Elasticsearch, car_id: str):
@@ -134,18 +145,7 @@ def create_car_document(event_body, user, media_bucket):
     # Parse and validate new car request body
     try:
         car_request = json.loads(event_body)
-        return (True, prepare_car_document(car_request, user, media_bucket))
-
-    except CarPhotoNotFoundException:
-        return False, response(404, {
-            'error': 'car-photo-not-found',
-            'message': 'Specified photo file does not exist'
-        })
-    except CarAudioNotFoundException:
-        return False, response(404, {
-            'error': 'car-audio-not-found',
-            'message': 'Specified audio file does not exists'
-        })
+        return True, prepare_car_document(car_request, user, media_bucket)
     except json.decoder.JSONDecodeError:
         logging.exception('Failed to decode request body json')
         return (False, response(400, {
@@ -158,6 +158,17 @@ def create_car_document(event_body, user, media_bucket):
             'error': 'car-invalid-request-data',
             'message': 'Invalid car data: {}'.format(e.message)
         }))
+    except ValueError as e:
+        msg = str(e)
+        if msg == 'car-audio-not-found':
+            return False, response(404, {
+                'error': 'car-audio-not-found',
+                'message': 'Specified audio file not found'
+            })
+        return False, response(400, {
+            'error': 'car-validation-error',
+            'message': msg
+        })
 
 
 def index_car(es, car_request_data, car_id, user, media_bucket):
@@ -214,7 +225,7 @@ def put_car_handler(event, context):
     es = result
     car_doc = get_car_document(es, car_id)
 
-    if car_doc['ownerId'] != user_id:
+    if car_doc['owner']['id'] != user_id:
         return response(403, 'Not authorized to modify this car')
 
     success, resp = index_car(es, event['body'], car_id, user, media_bucket)
@@ -234,7 +245,7 @@ def put_car_handler(event, context):
     return resp
 
 
-def delete_car_hander(event, context):
+def delete_car_handler(event, context):
     media_bucket = os.getenv('CAR_MEDIA_BUCKET')
     car_id = event['pathParameters']['car_id']
 
@@ -258,8 +269,18 @@ def delete_car_hander(event, context):
         audio_id = car_doc['audioId']
 
         es.delete(index=cars_index_name, id=car_id)
-        s3_client.delete_object(Bucket=media_bucket, Key='car-photos/{}'.format(photo_id))
-        s3_client.delete_object(Bucket=media_bucket, Key='car-audio/{}'.format(audio_id))
+
+        if photo_id:
+            try:
+                s3_client.delete_object(Bucket=media_bucket, Key='car-photos/{}'.format(photo_id))
+            except ClientError:
+                logging.warn('Failed to cleanup car photo')
+
+        if audio_id:
+            try:
+                s3_client.delete_object(Bucket=media_bucket, Key='car-audio/{}'.format(audio_id))
+            except ClientError:
+                logging.warn('Faied to cleanup car audio')
 
         return response(200, {
             'message': 'Car deleted successfully'
@@ -289,10 +310,3 @@ def get_car_handler(event, context):
     except NotFoundError:
         return response(404, 'Car not found')
     
-
-class CarPhotoNotFoundException(Exception):
-    pass
-
-class CarAudioNotFoundException(Exception):
-    pass
-

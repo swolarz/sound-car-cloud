@@ -43,10 +43,7 @@ def handler(event, context):
         update = UpdateByQuery(using=es).index(cars_index_name)
         update = update.filter('term', photoId=photo_id)
         update = update.script(source='ctx._source.photoId = params.nullPhoto', params={'nullPhoto': None})
-        update_result = update.execute()
-
-        if not update_result.success():
-            raise Exception('Elasticsearch refused to successfully execute photo cenzor')
+        update.execute()
 
         return response(200, {'result': 'Update seccessfull'})
 

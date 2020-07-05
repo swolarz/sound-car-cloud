@@ -114,6 +114,9 @@ export default {
     '$route.query'() {
       this.loadFilterParams();
       this.loadCars();
+    },
+    page: function() {
+      this.$router.push(this.searchUrl);
     }
   },
   methods: {
