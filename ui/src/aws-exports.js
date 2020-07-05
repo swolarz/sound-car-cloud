@@ -13,19 +13,20 @@ const awsmobile = {
   API: {
     endpoints: [
       {
-        name: "hello",
-        endpoint: aws_exports.apiUrl,
-        custom_header: async () => { 
-          return { 
-            Authorization: `Bearer ${(await Auth.currentSession()).getIdToken().getJwtToken()}`
-          }
-        }
-      },
-      {
         name: "carPhotosUpload",
         endpoint: url.resolve(aws_exports.apiUrl, "car-photos"),
         custom_header: async () => { 
           return { 
+            Authorization: `Bearer ${(await Auth.currentSession()).getIdToken().getJwtToken()}`,
+            "Content-Type": 'application/json' 
+          }
+        }
+      },
+      {
+        name: "carAudioUpload",
+        endpoint: url.resolve(aws_exports.apiUrl, "car-audio"),
+        custom_header: async () => {
+          return {
             Authorization: `Bearer ${(await Auth.currentSession()).getIdToken().getJwtToken()}`,
             "Content-Type": 'application/json' 
           }
@@ -49,7 +50,7 @@ const awsmobile = {
             "Content-Type": 'application/json' 
           }
         },
-      },
+      }
     ],
   },
 };

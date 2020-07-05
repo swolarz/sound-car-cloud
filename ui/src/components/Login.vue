@@ -1,11 +1,11 @@
 <template>
   <div class="login">
+    <ErrorDisplayer v-bind:errorMsg="errorMsg" />
     <div v-if="!signedIn">
       <input v-model="login" type="text" name="" placeholder="Login" ><br>
       <input v-model="password" type="password" name="" placeholder="Password" ><br>
       <button @click="signIn">Sign in</button>
     </div>
-    <ErrorDisplayer v-bind:errorMsg="errorMsg" />
   </div>
 </template>
 

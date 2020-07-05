@@ -101,7 +101,19 @@ def make_filter_range(range_filter):
     return {ops[side]: val for side, val in range_filter.items()}
 
 
-def to_car_result_info(car_hit, photos_base_url):
+def get_car_photo_url(media_base_url, photo_id):
+    if not photo_id:
+        return None
+    return urllib.parse.urljoin(media_base_url, 'car-photos/{}'.format(photo_id))
+
+
+def get_car_audio_url(media_base_url, audio_id):
+    if not audio_id:
+        return None
+    return urllib.parse.urljoin(media_base_url, 'car-audio/{}'.format(audio_id))
+
+
+def to_car_result_info(car_hit, media_base_url):
     return  {
         'id': car_hit.meta.id,
         'owner': {
@@ -110,8 +122,8 @@ def to_car_result_info(car_hit, photos_base_url):
         },
         'carTitle': car_hit.carTitle,
         'carIntro': car_hit.carIntroDescription,
-        'photoUrl': urllib.parse.urljoin(photos_base_url, car_hit.photoId),
-        # 'engineSoundUrl': car_hit.engineSoundFile,
+        'photoUrl': get_car_photo_url(media_base_url, car_hit.photoId),
+        'audioUrl': get_car_audio_url(media_base_url, car_hit.engineAudioId),
         'engine': car_hit.engine,
         'horsePower': car_hit.horsePower,
         'year': car_hit.year,
@@ -119,7 +131,7 @@ def to_car_result_info(car_hit, photos_base_url):
     }
 
 
-def find_cars(es: Elasticsearch, filters: dict, page: dict, photos_url: str) -> dict:
+def find_cars(es: Elasticsearch, filters: dict, page: dict, media_url: str) -> dict:
     search = Search(using=es).index(cars_index_name)
 
     # Pagination
@@ -132,7 +144,7 @@ def find_cars(es: Elasticsearch, filters: dict, page: dict, photos_url: str) -> 
     # Fields projection
     search = search.source([
         'carTitle', 'carIntroDescription',
-        'photoId', 'engineSoundFile',
+        'photoId', 'engineAudioId',
         'ownerId', 'ownerName',
         'engine', 'horsePower', 'year', 'mileage'
     ])
@@ -155,7 +167,7 @@ def find_cars(es: Elasticsearch, filters: dict, page: dict, photos_url: str) -> 
 
     # Results extraction
     response = search.execute()
-    results = list(map(lambda hit: to_car_result_info(hit, photos_url), response))
+    results = list(map(lambda hit: to_car_result_info(hit, media_url), response))
 
     return {
         'total': response.hits.total.value,
@@ -167,7 +179,7 @@ def find_cars(es: Elasticsearch, filters: dict, page: dict, photos_url: str) -> 
 
 def handler(event, context):
     es_endpoint = os.getenv('ELASTICSEARCH_SERVICE_ENDPOINT')
-    photo_bucket_url = os.getenv('CAR_PHOTOS_BUCKET_URL')
+    media_bucket_url = os.getenv('CAR_MEDIA_BUCKET_URL')
 
     # Connect to Elasticsearch service
     try:
@@ -189,7 +201,7 @@ def handler(event, context):
         })
 
     try:
-        car_results_data = find_cars(es, filters, page, photo_bucket_url)
+        car_results_data = find_cars(es, filters, page, media_bucket_url)
     except:
         logging.exception('Failed to fetch find cars by received filters')
         return response(500, {

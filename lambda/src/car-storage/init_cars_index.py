@@ -11,8 +11,10 @@ def init_cars_index(es: Elasticsearch):
     index_name = cars_index_name
     index_exists = es.indices.exists(index_name)
 
-    if not index_exists:
-        es.indices.create(index_name, body=cars_schema)
+    if index_exists:
+        es.indices.delete(index_name)
+
+    es.indices.create(index_name, body=cars_schema)
 
 
 def handler(event, context):
